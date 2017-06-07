@@ -1,0 +1,21 @@
+package: github.com/MorpheoOrg/compute
+import:
+- package: github.com/MorpheoOrg/go-packages
+  subpackages:
+  - client
+  - common
+
+- package: github.com/satori/go.uuid
+  version: ^1.1.0
+
+- package: gopkg.in/kataras/iris.v6
+  version: ^6.2.0
+  subpackages:
+  - adaptors/httprouter
+  - middleware/logger
+
+testImport:
+- package: github.com/stretchr/testify
+  version: ^1.1.4
+  subpackages:
+  - assert

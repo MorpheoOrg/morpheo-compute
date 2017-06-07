@@ -1,0 +1,188 @@
+hash: 2f0ac3d85b7dc2f69df619d1492eaa0cbb054868dc150059aafa4f38ef77578e
+updated: 2017-06-07T02:33:22.965670639+02:00
+imports:
+- name: github.com/aws/aws-sdk-go
+  version: 512bdaf8bec30abd545b440447cebb57b53d3af9
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/awsutil
+  - aws/client
+  - aws/client/metadata
+  - aws/corehandlers
+  - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
+  - aws/endpoints
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - internal/shareddefaults
+  - private/protocol
+  - private/protocol/query
+  - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/restxml
+  - private/protocol/xml/xmlutil
+  - service/s3
+  - service/sts
+- name: github.com/BurntSushi/toml
+  version: d94612f9fc140360834f9742158c70b5c5b5535b
+- name: github.com/docker/distribution
+  version: 0700fa570d7bcc1b3e46ee127c4489fd25f4daa3
+  subpackages:
+  - digestset
+  - reference
+- name: github.com/docker/docker
+  version: 90d35abf7b3535c1c319c872900fbd76374e521c
+  subpackages:
+  - api
+  - api/types
+  - api/types/blkiodev
+  - api/types/container
+  - api/types/events
+  - api/types/filters
+  - api/types/image
+  - api/types/mount
+  - api/types/network
+  - api/types/registry
+  - api/types/strslice
+  - api/types/swarm
+  - api/types/time
+  - api/types/versions
+  - api/types/volume
+  - client
+  - pkg/ioutils
+  - pkg/longpath
+  - pkg/system
+  - pkg/tlsconfig
+- name: github.com/docker/go-connections
+  version: a2afab9802043837035592f1c24827fb70766de9
+  subpackages:
+  - nat
+  - sockets
+  - tlsconfig
+- name: github.com/docker/go-units
+  version: 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
+- name: github.com/docker/libtrust
+  version: aabc10ec26b754e797f9028f4589c5b7bd90dc20
+- name: github.com/geekypanda/httpcache
+  version: 76ba6c68462ae362cda7564c44492b95322b363a
+  subpackages:
+  - internal
+  - internal/fhttp
+  - internal/fhttp/rule
+  - internal/nethttp
+  - internal/nethttp/rule
+  - internal/server
+- name: github.com/go-ini/ini
+  version: e7fea39b01aea8d5671f6858f0532f56e8bff3a5
+- name: github.com/golang/protobuf
+  version: c9c7427a2a70d2eb3bafa0ab2dc163e45f143317
+  subpackages:
+  - proto
+- name: github.com/google/go-github
+  version: 67f700645e97e82b8cf282ece3508805438be24f
+  subpackages:
+  - github
+- name: github.com/google/go-querystring
+  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  subpackages:
+  - query
+- name: github.com/hashicorp/go-version
+  version: 03c5bf6be031b6dd45afec16b1cf94fc8938bc77
+- name: github.com/imdario/mergo
+  version: 50d4dbd4eb0e84778abe37cefef140271d96fade
+- name: github.com/iris-contrib/formBinder
+  version: 81b6a071e35797b83562caf4b3cad24dc01912dc
+- name: github.com/jmespath/go-jmespath
+  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
+- name: github.com/kataras/go-errors
+  version: 6fb46ef666f60ce19b5cc73906d531645d5bf8bc
+- name: github.com/klauspost/compress
+  version: 14c9a76e3c95e47f8ccce949bba2c1101a8b85e6
+  subpackages:
+  - flate
+  - gzip
+  - zlib
+- name: github.com/klauspost/cpuid
+  version: 09cded8978dc9e80714c4d85b0322337b0a1e5e0
+- name: github.com/klauspost/crc32
+  version: 1bab8b35b6bb565f92cbc97939610af9369f942a
+- name: github.com/microcosm-cc/bluemonday
+  version: e79763773ab6222ca1d5a7cbd9d62d83c1f77081
+- name: github.com/Microsoft/go-winio
+  version: fff283ad5116362ca252298cfc9b95828956d85d
+- name: github.com/MorpheoOrg/go-packages
+  version: 334383ab37502c63405317a740f746416640d3dd
+  subpackages:
+  - client
+  - common
+- name: github.com/mreiferson/go-snappystream
+  version: 028eae7ab5c4c9e2d1cb4c4ca1e53259bbe7e504
+  subpackages:
+  - snappy-go
+- name: github.com/nsqio/go-nsq
+  version: d71fb89c9e0263aaed89645b0b168e11ccf597b1
+- name: github.com/opencontainers/go-digest
+  version: aa2ec055abd10d26d539eb630a92241b781ce4bc
+- name: github.com/pkg/errors
+  version: ff09b135c25aae272398c51a07235b90a75aa4f0
+- name: github.com/russross/blackfriday
+  version: 5f33e7b7878355cd2b7e6b8eefc48a5472c69f70
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
+- name: github.com/Sirupsen/logrus
+  version: 10f801ebc38b33738c9d17d50860f484a0988ff5
+- name: github.com/valyala/bytebufferpool
+  version: e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7
+- name: github.com/valyala/fasthttp
+  version: fc109d6887b5edb43510d924d14d735f3975fb51
+  subpackages:
+  - fasthttputil
+  - stackless
+- name: golang.org/x/crypto
+  version: 459e26527287adbc2adcc5d0d49abff9a5f315a7
+  subpackages:
+  - acme
+  - acme/autocert
+- name: golang.org/x/net
+  version: a6577fac2d73be281a500b310739095313165611
+  subpackages:
+  - context
+  - context/ctxhttp
+  - html
+  - html/atom
+  - proxy
+- name: golang.org/x/sys
+  version: 8fd966b47dbdd4faa03de0d06e3d733baeb9a1a9
+  subpackages:
+  - unix
+  - windows
+- name: google.golang.org/appengine
+  version: b79c28f0197795b4050bfcd7c4c2209136c594b1
+  subpackages:
+  - internal
+  - internal/app_identity
+  - internal/base
+  - internal/datastore
+  - internal/log
+  - internal/modules
+  - internal/remote_api
+- name: gopkg.in/kataras/iris.v6
+  version: 09a2066268f99fc8ee40ecddde8b415f76250f4b
+  subpackages:
+  - adaptors/httprouter
+  - middleware/logger
+- name: gopkg.in/yaml.v2
+  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
+testImports:
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
