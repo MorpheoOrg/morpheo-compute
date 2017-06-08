@@ -58,7 +58,7 @@ type ProducerConfig struct {
 	lock sync.Mutex
 }
 
-// TLSOn Returns true if TLS credentials have been provided
+// TLSOn returns true if TLS credentials have been provided
 func (c *ProducerConfig) TLSOn() bool {
 	return c.CertFile != "" && c.KeyFile != ""
 }
