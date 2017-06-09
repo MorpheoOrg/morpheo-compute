@@ -120,11 +120,11 @@ $(BIN_CLEAN_TARGETS):
 
 # 4. Packaging
 $(DOCKER_TARGETS): %-docker: %/build/target
-	@echo "Building the $(DOCKER_REPO)/$(subst -docker,,$(@)):$(DOCKER_TAG) Docker image"
-	docker build -t $(DOCKER_REPO)/$(subst -docker,,$(@)):$(DOCKER_TAG) \
+	@echo "Building the $(DOCKER_REPO)/compute-$(subst -docker,,$(@)):$(DOCKER_TAG) Docker image"
+	docker build -t $(DOCKER_REPO)/compute-$(subst -docker,,$(@)):$(DOCKER_TAG) \
 	  ./$(subst -docker,,$(@))
 
 $(DOCKER_CLEAN_TARGETS):
-	@echo "Deleting the $(DOCKER_REPO)/$(subst -docker,,$(@)):$(DOCKER_TAG) Docker image"
-	docker rmi $(DOCKER_REPO)/$(subst -docker-clean,,$(@)):$(DOCKER_TAG) || \
-		echo "No $(DOCKER_REPO)/$(subst -docker-clean,,$(@)):$(DOCKER_TAG) docker image to remove"
+	@echo "Deleting the $(DOCKER_REPO)/compute-$(subst -docker,,$(@)):$(DOCKER_TAG) Docker image"
+	docker rmi $(DOCKER_REPO)/compute-$(subst -docker-clean,,$(@)):$(DOCKER_TAG) || \
+		echo "No $(DOCKER_REPO)/compute-$(subst -docker-clean,,$(@)):$(DOCKER_TAG) docker image to remove"
