@@ -66,6 +66,7 @@ type Worker struct {
 	untargetedTestFolder string
 	modelFolder          string
 	predFolder           string
+	perfFolder           string
 	problemImagePrefix   string
 	algoImagePrefix      string
 
@@ -78,12 +79,13 @@ type Worker struct {
 }
 
 // NewWorker creates a Worker instance
-func NewWorker(dataFolder, trainFolder, testFolder, untargetedTestFolder, predFolder, modelFolder, problemImagePrefix, algoImagePrefix string, containerRuntime common.ContainerRuntime, storage client.Storage, orchestrator client.Orchestrator) *Worker {
+func NewWorker(dataFolder, trainFolder, testFolder, untargetedTestFolder, predFolder, perfFolder, modelFolder, problemImagePrefix, algoImagePrefix string, containerRuntime common.ContainerRuntime, storage client.Storage, orchestrator client.Orchestrator) *Worker {
 	return &Worker{
 		dataFolder:           dataFolder,
 		trainFolder:          trainFolder,
 		testFolder:           testFolder,
 		predFolder:           predFolder,
+		perfFolder:           perfFolder,
 		untargetedTestFolder: untargetedTestFolder,
 		modelFolder:          modelFolder,
 		problemImagePrefix:   problemImagePrefix,
@@ -147,6 +149,8 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	testFolder := filepath.Join(taskDataFolder, w.testFolder)
 	untargetedTestFolder := filepath.Join(taskDataFolder, w.untargetedTestFolder)
 	modelFolder := filepath.Join(taskDataFolder, w.modelFolder)
+	perfFolder := filepath.Join(taskDataFolder, w.perfFolder)
+
 	err = os.MkdirAll(trainFolder, os.ModeDir)
 	if err != nil {
 		return fmt.Errorf("Error creating train folder under %s: %s", trainFolder, err)
@@ -263,7 +267,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	)
 
 	// Let's compute the performance !
-	_, err = w.ComputePerf(problemImageName, trainFolder, testFolder)
+	_, err = w.ComputePerf(problemImageName, trainFolder, testFolder, perfFolder)
 	if err != nil {
 		// FIXME: do not return here
 		return fmt.Errorf("Error computing perf for problem %s and model (new) %s: %s", task.Problem, task.ModelEnd, err)
@@ -453,10 +457,10 @@ func (w *Worker) TargzFolder(folder string, dest io.Writer) error {
 func (w *Worker) UntargetTestingVolume(problemImage, testFolder, untargetedTestFolder string) (containerID string, err error) {
 	return w.containerRuntime.RunImageInUntrustedContainer(
 		problemImage,
-		[]string{"-T", "detarget", "-i", "/true_data", "-s", "/pred_data"},
+		[]string{"-T", "detarget", "-i", "/hidden_data", "-s", "/submission_data"},
 		map[string]string{
-			testFolder:           "/true_data/test",
-			untargetedTestFolder: "/pred_data/test",
+			testFolder:           "/hidden_data/test",
+			untargetedTestFolder: "/submission_data/test",
 		}, true)
 }
 
@@ -478,17 +482,18 @@ func (w *Worker) Predict(modelImage, testFolder string) (containerID string, err
 		modelImage,
 		[]string{"-V", "/data", "-T", "predict"},
 		map[string]string{
-			testFolder: "/true_data",
+			testFolder: "/data/test",
 		}, true)
 }
 
 // ComputePerf analyses the prediction folders and computes a score for the model
-func (w *Worker) ComputePerf(problemImage, trainFolder, testFolder string) (containerID string, err error) {
+func (w *Worker) ComputePerf(problemImage, trainFolder, testFolder, perfFolder string) (containerID string, err error) {
 	return w.containerRuntime.RunImageInUntrustedContainer(
 		problemImage,
-		[]string{"-T", "perf", "-i", "/true_data", "-s", "/pred_data"},
+		[]string{"-T", "perf", "-i", "/hidden_data", "-s", "/submission_data"},
 		map[string]string{
-			testFolder:  "/true_data/test",
-			trainFolder: "/pred_data/train",
+			testFolder:  "/hidden_data/test",
+			trainFolder: "/submission_data/train",
+			perfFolder:  "/hidden_data/perf",
 		}, true)
 }

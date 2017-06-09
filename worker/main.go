@@ -85,6 +85,7 @@ func main() {
 		"test",
 		"untargeted_test",
 		"pred",
+		"perf",
 		"model",
 		// Container runtime image name prefixes
 		"problem",
