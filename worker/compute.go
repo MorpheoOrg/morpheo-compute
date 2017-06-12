@@ -267,7 +267,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	)
 
 	// Let's compute the performance !
-	_, err = w.ComputePerf(problemImageName, trainFolder, testFolder, untargetedTestFolder, modelFolder, perfFolder)
+	_, err = w.ComputePerf(problemImageName, trainFolder, testFolder, untargetedTestFolder, perfFolder)
 	if err != nil {
 		// FIXME: do not return here
 		return fmt.Errorf("Error computing perf for problem %s and model (new) %s: %s", task.Problem, task.ModelEnd, err)
@@ -487,7 +487,7 @@ func (w *Worker) Predict(modelImage, testFolder string) (containerID string, err
 }
 
 // ComputePerf analyses the prediction folders and computes a score for the model
-func (w *Worker) ComputePerf(problemImage, trainFolder, testFolder, untargetedTestFolder, modelFolder, perfFolder string) (containerID string, err error) {
+func (w *Worker) ComputePerf(problemImage, trainFolder, testFolder, untargetedTestFolder, perfFolder string) (containerID string, err error) {
 	return w.containerRuntime.RunImageInUntrustedContainer(
 		problemImage,
 		[]string{"-T", "perf", "-i", "/hidden_data", "-s", "/submission_data"},
@@ -496,6 +496,5 @@ func (w *Worker) ComputePerf(problemImage, trainFolder, testFolder, untargetedTe
 			perfFolder:           "/hidden_data/perf",
 			trainFolder:          "/submission_data/train",
 			untargetedTestFolder: "/submission_data/test",
-			modelFolder:          "/submission_data/model",
 		}, true)
 }
