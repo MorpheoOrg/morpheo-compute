@@ -48,7 +48,6 @@ import (
 
 	"github.com/MorpheoOrg/go-packages/client"
 	"github.com/MorpheoOrg/go-packages/common"
-	uuid "github.com/satori/go.uuid"
 )
 
 // Worker describes a worker (where it stores its data, which container runtime it uses...).
@@ -200,7 +199,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	defer w.containerRuntime.ImageUnload(algoImageName)
 
 	// Pull model if a model_start parameter was given in the learn-uplet
-	if !uuid.Equal(task.ModelStart, uuid.Nil) {
+	if task.Rank > 0 {
 		model, err := w.storage.GetModelBlob(task.ModelStart)
 		if err != nil {
 			return fmt.Errorf("Error pulling start model %s from storage: %s", task.ModelStart, err)
