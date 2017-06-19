@@ -172,15 +172,15 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	defer os.RemoveAll(taskDataFolder)
 
 	// Load problem workflow
-	problemWorkflow, err := w.storage.GetProblemWorkflowBlob(task.Problem)
+	problemWorkflow, err := w.storage.GetProblemWorkflowBlob(task.Workflow)
 	if err != nil {
-		return fmt.Errorf("Error pulling problem workflow %s from storage: %s", task.Problem, err)
+		return fmt.Errorf("Error pulling problem workflow %s from storage: %s", task.Workflow, err)
 	}
 
-	problemImageName := fmt.Sprintf("%s-%s", w.problemImagePrefix, task.Problem)
+	problemImageName := fmt.Sprintf("%s-%s", w.problemImagePrefix, task.Workflow)
 	err = w.ImageLoad(problemImageName, problemWorkflow)
 	if err != nil {
-		return fmt.Errorf("Error loading problem workflow image %s in Docker daemon: %s", task.Problem, err)
+		return fmt.Errorf("Error loading problem workflow image %s in Docker daemon: %s", task.Workflow, err)
 	}
 	problemWorkflow.Close()
 	defer w.containerRuntime.ImageUnload(problemImageName)
@@ -251,7 +251,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	// Let's remove targets from the test data
 	_, err = w.UntargetTestingVolume(problemImageName, testFolder, untargetedTestFolder)
 	if err != nil {
-		return fmt.Errorf("Error preparing problem %s for %s: %s", task.Problem, task.ModelStart, err)
+		return fmt.Errorf("Error preparing problem %s for %s: %s", task.Workflow, task.ModelStart, err)
 	}
 
 	// Let's pass the task to our execution backend, now that everything should be in place
@@ -270,7 +270,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	_, err = w.ComputePerf(problemImageName, trainFolder, testFolder, untargetedTestFolder, perfFolder)
 	if err != nil {
 		// FIXME: do not return here
-		return fmt.Errorf("Error computing perf for problem %s and model (new) %s: %s", task.Problem, task.ModelEnd, err)
+		return fmt.Errorf("Error computing perf for problem %s and model (new) %s: %s", task.Workflow, task.ModelEnd, err)
 	}
 
 	// Let's create a new model and post it to storage
