@@ -117,7 +117,7 @@ imports:
 - name: github.com/Microsoft/go-winio
   version: fff283ad5116362ca252298cfc9b95828956d85d
 - name: github.com/MorpheoOrg/go-packages
-  version: 334383ab37502c63405317a740f746416640d3dd
+  version: af524e47b58b6174be36fec5195f17d3b8d1ac66
   subpackages:
   - client
   - common
