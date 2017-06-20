@@ -1,8 +1,8 @@
 hash: 2f0ac3d85b7dc2f69df619d1492eaa0cbb054868dc150059aafa4f38ef77578e
-updated: 2017-06-20T18:29:43.256212071Z
+updated: 2017-06-20T22:53:42.153998789Z
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 0ddc167e85ddb40d9fbc97bfabda2175e49b3dbc
+  version: a9609d199df31ef4b1f347b007d63bb7c48e5619
   subpackages:
   - aws
   - aws/awserr
@@ -118,7 +118,7 @@ imports:
 - name: github.com/Microsoft/go-winio
   version: f533f7a102197536779ea3a8cb881d639e21ec5a
 - name: github.com/MorpheoOrg/go-packages
-  version: 3be6b02e3a7e349336db741aaea68a2b1f233dc1
+  version: b5d4bd52bafd51b83d3aa203d825ef2fc29c456a
   subpackages:
   - client
   - common

@@ -113,10 +113,10 @@ func (w *Worker) HandleLearn(message []byte) (err error) {
 	}
 
 	// Update its status to pending on the orchestrator
-	// err = w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusPending, task.ID)
-	// if err != nil {
-	// 	return fmt.Errorf("Error seting learnuplet status to pending on the orchestrator: %s", err)
-	// }
+	err = w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusPending, task.ID, task.WorkerID)
+	if err != nil {
+		return fmt.Errorf("Error seting learnuplet status to pending on the orchestrator: %s", err)
+	}
 
 	err = w.LearnWorkflow(task)
 	if err != nil {
@@ -124,17 +124,13 @@ func (w *Worker) HandleLearn(message []byte) (err error) {
 		return err
 		// TODO: handle fatal and non-fatal errors differently and set learnuplet status to failed only
 		// if the error was fatal
-		err = w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusFailed, task.ID)
+		err = w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusFailed, task.ID, task.WorkerID)
 		if err != nil {
 			return fmt.Errorf("Error setting learnuplet status to failed on the orchestrator: %s", err)
 		}
 		return fmt.Errorf("Error in LearnWorkflow: %s", err)
 	}
 
-	err = w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusDone, task.ID)
-	if err != nil {
-		return fmt.Errorf("Error seting learnuplet status to done on the orchestrator: %s", err)
-	}
 	return nil
 }
 
@@ -308,11 +304,12 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	if err != nil {
 		return fmt.Errorf("Error reading performance file %s: %s", performanceFilePath, err)
 	}
-	perfuplet := client.Perfuplet{Status: "done"}
+	perfuplet := client.Perfuplet{}
 	err = json.NewDecoder(resultFile).Decode(&perfuplet)
 	if err != nil {
 		return fmt.Errorf("Error un-marshaling performance file to JSON: %s", err)
 	}
+	perfuplet.Status = common.TaskStatusDone
 
 	err = w.orchestrator.PostLearnResult(task.ID, perfuplet)
 	if err != nil {

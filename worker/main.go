@@ -37,6 +37,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"time"
 
 	"github.com/MorpheoOrg/go-packages/client"
@@ -99,7 +100,12 @@ func main() {
 	)
 
 	// Let's hook with our consumer
-	consumer := common.NewNSQConsumer(conf.NsqlookupdURLs, "compute", 5*time.Second)
+	consumer := common.NewNSQConsumer(
+		conf.NsqlookupdURLs,
+		"compute",
+		5*time.Second,
+		log.New(os.Stdout, "[NSQ]", log.LstdFlags),
+	)
 
 	// Wire our message handlers
 	consumer.AddHandler(common.TrainTopic, worker.HandleLearn, conf.LearnParallelism, conf.LearnTimeout)
