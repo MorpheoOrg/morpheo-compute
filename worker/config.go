@@ -52,12 +52,14 @@ type ConsumerConfig struct {
 	PredictTimeout     time.Duration
 
 	// Other compute services
-	OrchestratorHost string
-	OrchestratorPort int
-	StorageHost      string
-	StoragePort      int
-	StorageUser      string
-	StoragePassword  string
+	OrchestratorHost     string
+	OrchestratorPort     int
+	OrchestratorUser     string
+	OrchestratorPassword string
+	StorageHost          string
+	StoragePort          int
+	StorageUser          string
+	StoragePassword      string
 
 	// Container Runtime
 	DockerHost    string
@@ -73,12 +75,14 @@ func NewConsumerConfig() (conf *ConsumerConfig) {
 		learnTimeout       time.Duration
 		predictTimeout     time.Duration
 
-		orchestratorHost string
-		orchestratorPort int
-		storageHost      string
-		storagePort      int
-		storageUser      string
-		storagePassword  string
+		orchestratorHost     string
+		orchestratorPort     int
+		orchestratorUser     string
+		orchestratorPassword string
+		storageHost          string
+		storagePort          int
+		storageUser          string
+		storagePassword      string
 
 		dockerHost    string
 		dockerTimeout time.Duration
@@ -93,6 +97,8 @@ func NewConsumerConfig() (conf *ConsumerConfig) {
 
 	flag.StringVar(&orchestratorHost, "orchestrator-host", "", "Hostname of the orchestrator to send notifications to (leave blank to use the Orchestrator API Mock)")
 	flag.IntVar(&orchestratorPort, "orchestrator-port", 80, "TCP port to contact the orchestrator on (default: 80)")
+	flag.StringVar(&orchestratorUser, "orchestrator-user", "u", "Basic Authentication username of the orchestrator API")
+	flag.StringVar(&orchestratorPassword, "orchestrator-password", "p", "Basic Authentication password of the orchestrator API")
 
 	flag.StringVar(&storageHost, "storage-host", "", "Hostname of the storage API to retrieve data from (leave blank to use the Storage API Mock)")
 	flag.IntVar(&storagePort, "storage-port", 80, "TCP port to contact storage on (default: 80)")
@@ -115,12 +121,14 @@ func NewConsumerConfig() (conf *ConsumerConfig) {
 		PredictTimeout:     predictTimeout,
 
 		// Other compute services
-		OrchestratorHost: orchestratorHost,
-		OrchestratorPort: orchestratorPort,
-		StorageHost:      storageHost,
-		StoragePort:      storagePort,
-		StorageUser:      storageUser,
-		StoragePassword:  storagePassword,
+		OrchestratorHost:     orchestratorHost,
+		OrchestratorPort:     orchestratorPort,
+		OrchestratorUser:     orchestratorUser,
+		OrchestratorPassword: orchestratorPassword,
+		StorageHost:          storageHost,
+		StoragePort:          storagePort,
+		StorageUser:          storageUser,
+		StoragePassword:      storagePassword,
 
 		// Container Runtime
 		DockerHost:    dockerHost,

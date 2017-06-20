@@ -259,12 +259,6 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 		return fmt.Errorf("Error in train task: %s -- Body: %s", err, task)
 	}
 
-	// Let's move test predictions to the test folder with targets
-	os.Rename(
-		fmt.Sprintf("%s/%s", untargetedTestFolder, w.predFolder),
-		fmt.Sprintf("%s/%s", testFolder, w.predFolder),
-	)
-
 	// Let's compute the performance !
 	_, err = w.ComputePerf(problemImageName, trainFolder, testFolder, untargetedTestFolder, perfFolder)
 	if err != nil {
@@ -280,36 +274,42 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	newModel := common.NewModel(algoInfo)
 	newModel.ID = task.ModelEnd
 
-	// Let's compress our model in a separate goroutine while uploading the compressed data to storage
-	// on the fly :)
-	model, archiveWriter := io.Pipe()
-	errChan := make(chan error)
-	go func() {
-		err := w.TargzFolder(modelFolder, archiveWriter)
-		archiveWriter.Close()
-		errChan <- err
-	}()
-
-	err = w.storage.PostModel(newModel, model)
+	// Let's compress our model in a separate goroutine while writing it on disk on the fly
+	path := fmt.Sprintf("%s/model.tar.gz", taskDataFolder)
+	modelArchiveWriter, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("Error streaming new model %s to storage: %s", task.ModelEnd, err)
+		return fmt.Errorf("Error creating new model archive file %s: %s", path, err)
 	}
-	model.Close()
-
-	err = <-errChan
+	err = w.TargzFolder(modelFolder, modelArchiveWriter)
 	if err != nil {
 		return fmt.Errorf("Error tar-gzipping new model %s: %s", task.ModelEnd, err)
 	}
+	modelArchiveWriter.Close()
+
+	modelArchiveReader, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("Error reading new model archive file %s: %s", path, err)
+	}
+	modelArchiveStat, err := modelArchiveReader.Stat()
+	if err != nil {
+		return fmt.Errorf("Error reading new model archive size %s: %s", path, err)
+	}
+
+	err = w.storage.PostModel(newModel, modelArchiveReader, modelArchiveStat.Size())
+	if err != nil {
+		return fmt.Errorf("Error streaming new model %s to storage: %s", task.ModelEnd, err)
+	}
+	modelArchiveReader.Close()
 
 	// Let's send the perf file to the orchestrator
-	performanceFilePath := fmt.Sprintf("%s/performance.json", testFolder)
+	performanceFilePath := fmt.Sprintf("%s/performance.json", perfFolder)
 	log.Println(performanceFilePath)
 	resultFile, err := os.Open(performanceFilePath)
 	if err != nil {
 		return fmt.Errorf("Error reading performance file %s: %s", performanceFilePath, err)
 	}
 	perfuplet := client.Perfuplet{Status: "done"}
-	err = json.NewDecoder(resultFile).Decode(perfuplet)
+	err = json.NewDecoder(resultFile).Decode(&perfuplet)
 	if err != nil {
 		return fmt.Errorf("Error un-marshaling performance file to JSON: %s", err)
 	}

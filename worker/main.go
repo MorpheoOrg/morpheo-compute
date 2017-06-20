@@ -65,6 +65,8 @@ func main() {
 		orchestratorBackend = &client.OrchestratorAPI{
 			Hostname: conf.OrchestratorHost,
 			Port:     conf.OrchestratorPort,
+			User:     conf.OrchestratorUser,
+			Password: conf.OrchestratorPassword,
 		}
 	} else {
 		orchestratorBackend = client.NewOrchestratorAPIMock()
