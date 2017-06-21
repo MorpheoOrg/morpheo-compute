@@ -267,7 +267,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	if err != nil {
 		return fmt.Errorf("Error retrieving algorithm %s metadata: %s", task.Algo, err)
 	}
-	newModel := common.NewModel(algoInfo)
+	newModel := common.NewModel(task.ModelEnd, algoInfo)
 	newModel.ID = task.ModelEnd
 
 	// Let's compress our model in a separate goroutine while writing it on disk on the fly

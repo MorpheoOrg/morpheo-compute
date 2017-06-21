@@ -1,5 +1,5 @@
 hash: 2f0ac3d85b7dc2f69df619d1492eaa0cbb054868dc150059aafa4f38ef77578e
-updated: 2017-06-20T22:53:42.153998789Z
+updated: 2017-06-21T03:57:54.453134359Z
 imports:
 - name: github.com/aws/aws-sdk-go
   version: a9609d199df31ef4b1f347b007d63bb7c48e5619
@@ -84,7 +84,7 @@ imports:
 - name: github.com/go-ini/ini
   version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
 - name: github.com/golang/protobuf
-  version: e325f446bebc2998605911c0a2650d9920361d4a
+  version: 1fb8fd32a09087bcd727225167edd31e1b9ceb24
   subpackages:
   - proto
 - name: github.com/google/go-github
@@ -118,7 +118,7 @@ imports:
 - name: github.com/Microsoft/go-winio
   version: f533f7a102197536779ea3a8cb881d639e21ec5a
 - name: github.com/MorpheoOrg/go-packages
-  version: b5d4bd52bafd51b83d3aa203d825ef2fc29c456a
+  version: 72b3832eeb6079de29e6267608a8e6038d0ac934
   subpackages:
   - client
   - common
