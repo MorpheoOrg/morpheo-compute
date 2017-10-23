@@ -62,16 +62,16 @@ func main() {
 
 	// And with the orchestrator
 	var orchestratorBackend client.Orchestrator
-	if conf.OrchestratorHost != "" {
-		orchestratorBackend = &client.OrchestratorAPI{
-			Hostname: conf.OrchestratorHost,
-			Port:     conf.OrchestratorPort,
-			User:     conf.OrchestratorUser,
-			Password: conf.OrchestratorPassword,
-		}
-	} else {
-		orchestratorBackend = client.NewOrchestratorAPIMock()
+	// if conf.OrchestratorHost != "" {
+	orchestratorBackend = &client.OrchestratorAPI{
+		Hostname: conf.OrchestratorHost,
+		Port:     conf.OrchestratorPort,
+		User:     conf.OrchestratorUser,
+		Password: conf.OrchestratorPassword,
 	}
+	//} else {
+	//	orchestratorBackend = client.NewOrchestratorAPIMock()
+	//}
 
 	// Let's hook to our container backend and create a Worker instance containing
 	// our message handlers
@@ -80,24 +80,24 @@ func main() {
 		log.Panicf("[FATAL ERROR] Impossible to connect to Docker container backend: %s", err)
 	}
 
-	worker := NewWorker(
+	worker := &Worker{
 		// Root folder for train/test/predict data (should shared with the container runtime)
-		"/data",
+		dataFolder: "/data",
 		// Subfolder names
-		"train",
-		"test",
-		"untargeted_test",
-		"pred",
-		"perf",
-		"model",
+		trainFolder:          "train",
+		testFolder:           "test",
+		predFolder:           "pred",
+		perfFolder:           "perf",
+		untargetedTestFolder: "untargeted_test",
+		modelFolder:          "model",
 		// Container runtime image name prefixes
-		"problem",
-		"algo",
+		problemImagePrefix: "problem",
+		algoImagePrefix:    "algo",
 		// Dependency injection is done here :)
-		containerRuntime,
-		storageBackend,
-		orchestratorBackend,
-	)
+		containerRuntime: containerRuntime,
+		storage:          storageBackend,
+		orchestrator:     orchestratorBackend,
+	}
 
 	// Let's hook with our consumer
 	consumer := common.NewNSQConsumer(
@@ -109,8 +109,7 @@ func main() {
 
 	// Wire our message handlers
 	consumer.AddHandler(common.TrainTopic, worker.HandleLearn, conf.LearnParallelism, conf.LearnTimeout)
-	// TODO: add the prediction handler too.
-	// consumer.AddHandler(common.PredictTopic, worker.HandlePred, conf.PredictParallelism, conf.PredictTimeout)
+	consumer.AddHandler(common.PredictTopic, worker.HandlePred, conf.PredictParallelism, conf.PredictTimeout)
 
 	// Let's connect to the for real and start pulling tasks
 	consumer.ConsumeUntilKilled()

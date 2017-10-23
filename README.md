@@ -36,3 +36,4 @@ fork) under another licence.
 Maintainers
 -----------
 * Étienne Lafarge <etienne_a t_rythm.co>
+* Max-Pol Le Brun <maxpol_a t_morpheo.co>

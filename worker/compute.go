@@ -42,6 +42,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -102,7 +103,6 @@ func (w *Worker) HandleLearn(message []byte) (err error) {
 
 	// Unmarshal the learn-uplet
 	var task common.LearnUplet
-
 	err = json.NewDecoder(bytes.NewReader(message)).Decode(&task)
 	if err != nil {
 		return fmt.Errorf("Error un-marshaling learn-uplet: %s -- Body: %s", err, message)
@@ -115,13 +115,11 @@ func (w *Worker) HandleLearn(message []byte) (err error) {
 	// Update its status to pending on the orchestrator
 	err = w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusPending, task.ID, task.WorkerID)
 	if err != nil {
-		return fmt.Errorf("Error seting learnuplet status to pending on the orchestrator: %s", err)
+		return fmt.Errorf("Error setting learnuplet status to pending on the orchestrator: %s", err)
 	}
 
 	err = w.LearnWorkflow(task)
 	if err != nil {
-		log.Println(err)
-		return err
 		// TODO: handle fatal and non-fatal errors differently and set learnuplet status to failed only
 		// if the error was fatal
 		err = w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusFailed, task.ID, task.WorkerID)
@@ -243,7 +241,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 		data.Close()
 	}
 
-	// Let's remove targets from the test data
+	// Let's copy test data into untargetedTestFolder and remove targets
 	_, err = w.UntargetTestingVolume(problemImageName, testFolder, untargetedTestFolder)
 	if err != nil {
 		return fmt.Errorf("Error preparing problem %s for %s: %s", task.Workflow, task.ModelStart, err)
@@ -325,23 +323,157 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 }
 
 // HandlePred handles our prediction tasks
-// func (w *Worker) HandlePred(message []byte) (err error) {
-// 	var task common.Preduplet
-// 	err = json.NewDecoder(bytes.NewReader(message)).Decode(&task)
-// 	if err != nil {
-// 		return fmt.Errorf("Error un-marshaling pred-uplet: %s -- Body: %s", err, message)
-// 	}
-//
-//	_, err = w.Predict(modelImageName, untargetedTestFolder)
-//	if err != nil {
-//		return fmt.Errorf("Error in test task: %s -- Body: %s", err, task)
-//	}
-//
-// 	// TODO: send the prediction to the viewer, asynchronously
-// 	log.Printf("Predicition completed with success. Predicition %s", prediction)
-//
-// 	return
-// }
+func (w *Worker) HandlePred(message []byte) (err error) {
+	log.Println("[DEBUG] Starting prediction task")
+
+	// Unmarshal the pred-uplet
+	var task common.Preduplet
+	err = json.NewDecoder(bytes.NewReader(message)).Decode(&task)
+	if err != nil {
+		return fmt.Errorf("Error un-marshaling pred-uplet: %s -- Body: %s", err, message)
+	}
+
+	// Check that the pred-uplet is valid
+	if err = task.Check(); err != nil {
+		return fmt.Errorf("Error in pred task: %s -- Body: %s", err, message)
+	}
+
+	// Setup directory structure
+	testFolder := filepath.Join(w.dataFolder, w.testFolder)
+	modelFolder := filepath.Join(w.dataFolder, w.modelFolder)
+	predFolder := filepath.Join(testFolder, w.predFolder)
+
+	err = os.MkdirAll(testFolder, os.ModeDir)
+	if err != nil {
+		return fmt.Errorf("Error creating test folder under %s: %s", testFolder, err)
+	}
+	err = os.MkdirAll(modelFolder, os.ModeDir)
+	if err != nil {
+		return fmt.Errorf("Error creating model folder under %s: %s", modelFolder, err)
+	}
+	err = os.MkdirAll(predFolder, os.ModeDir)
+	if err != nil {
+		return fmt.Errorf("Error creating pred folder under %s: %s", predFolder, err)
+	}
+
+	// Pulling data from storage to testFolder
+	data, err := w.storage.GetDataBlob(task.Data)
+	if err != nil {
+		return fmt.Errorf("Error pulling data %s from storage: %s", task.Data, err)
+	}
+	path := fmt.Sprintf("%s/%s", testFolder, task.Data)
+	dataFile, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("Error creating file %s: %s", path, err)
+	}
+	n, err := io.Copy(dataFile, data)
+	if err != nil {
+		return fmt.Errorf("Error copying data file %s (%d bytes written): %s", path, n, err)
+	}
+	dataFile.Close()
+	data.Close()
+
+	// Pull model from storage and store it in modelFolder
+	model, err := w.storage.GetModelBlob(task.Model)
+	if err != nil {
+		return fmt.Errorf("Error pulling model %s from storage: %s", task.Model, err)
+	}
+
+	err = w.UntargzInFolder(modelFolder, model)
+	if err != nil {
+		return fmt.Errorf("Error un-tar-gz-ing model: %s", err)
+	}
+	model.Close()
+
+	// Rename model
+	files, err := ioutil.ReadDir(modelFolder)
+	if err != nil {
+		return fmt.Errorf("Error reading modelFolder: %s", err)
+	}
+	if len(files) != 1 {
+		return fmt.Errorf("Error: several files in modelFolder")
+	}
+	for _, f := range files {
+		oldpath := filepath.Join(modelFolder, f.Name())
+		newpath := filepath.Join(modelFolder, "model_trained.json")
+		if err = os.Rename(oldpath, newpath); err != nil {
+			return fmt.Errorf("Error renaming model: %s", err)
+		}
+	}
+
+	// Pull associated algo and load it into a container
+	modelInfo, err := w.storage.GetModel(task.Model)
+	if err != nil {
+		return fmt.Errorf("Error retrieving model %s metadata: %s", task.Model, err)
+	}
+	algo, err := w.storage.GetAlgoBlob(modelInfo.Algo)
+	if err != nil {
+		return fmt.Errorf("Error pulling algo %s from storage: %s", modelInfo.Algo, err)
+	}
+	algoImageName := fmt.Sprintf("%s-%s", w.algoImagePrefix, modelInfo.Algo)
+	err = w.ImageLoad(algoImageName, algo)
+	if err != nil {
+		return fmt.Errorf("Error loading algo image %s in Docker daemon: %s", algoImageName, err)
+	}
+	algo.Close()
+	defer w.containerRuntime.ImageUnload(algoImageName)
+
+	// Let's pass the prediction task to our execution backend, now that everything should be in place
+	_, err = w.Predict(algoImageName, testFolder, predFolder, modelFolder)
+	if err != nil {
+		return fmt.Errorf("Error in pred task: %s -- Body: %s", err, task)
+	}
+
+	// Let's send the prediction to Storage and address & status to Orchestrator
+	// Check if prediction file exists
+	path = filepath.Join(predFolder, task.Data.String())
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return fmt.Errorf("Error: missing prediction file for data %s", task.Data.String())
+	}
+
+	// Open file and retrieve size
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("Error opening prediction file from path %s: %s", path, err)
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("Error retrieving file size stat: %s", err)
+	}
+	filesize := int(stat.Size())
+
+	// // Let's tar-gz the file
+	// var targzFile bytes.Buffer
+	// err = TargzFile(file, &targzFile)
+	// if err != nil {
+	// 	log.Println("Error compressing prediction file from path %s: %s", path, err)
+	// 	continue
+	// }
+
+	// Send the prediction to storage
+	log.Println("[DEBUG] sending the predictions to Storage...")
+	newPrediction := common.NewPrediction()
+	err = w.storage.PostPrediction(newPrediction, file, filesize)
+	if err != nil {
+		return fmt.Errorf("Error streaming new prediction %s to storage: %s", newPrediction.ID, err)
+	}
+
+	// Send status and prediction address to Orchestrator
+	log.Println("[DEBUG] sending the status and prediction UUID to Orchestrator...")
+	preddone := client.Preddone{
+		Status:              common.TaskStatusDone,
+		PredictionStorageID: newPrediction.ID,
+	}
+	err = w.orchestrator.PostPredResult(task.ID, preddone)
+	if err != nil {
+		return fmt.Errorf("Error setting preduplet status to 'done' on the orchestrator: %s", err)
+	}
+
+	log.Printf("[INFO] Prediction finished with success, cleaning up...")
+	return nil
+}
 
 // ImageLoad loads the docker image corresponding to a problem workflow/submission container in the
 // container runtime that will then run this problem workflow/submission container
@@ -376,7 +508,7 @@ func (w *Worker) UntargzInFolder(folder string, tarGzReader io.Reader) error {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return fmt.Errorf("Error reading model tar archive: %s")
+			return fmt.Errorf("Error reading model tar archive: %s", err)
 		}
 
 		path := filepath.Join(folder, header.Name)
@@ -428,6 +560,10 @@ func (w *Worker) TargzFolder(folder string, dest io.Writer) error {
 		log.Printf("Sending %s to archive", filename)
 
 		file, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("Error opening file from path %s: %s", path, err)
+		}
+		defer file.Close()
 		header := &tar.Header{
 			Name:    filename,
 			Size:    info.Size(),
@@ -447,8 +583,37 @@ func (w *Worker) TargzFolder(folder string, dest io.Writer) error {
 	})
 }
 
-// UntargetTestingVolume copies data from /<host-data-volume>/<model>/data to
-// /<host-data-volume>/<model>/train and removes targets from test files... using the problem
+// TargzFile tars and gzips a file and forwards it to an io.Writer
+func TargzFile(file *os.File, dest io.Writer) error {
+	// Let's wire our writer together
+	zipWriter := gzip.NewWriter(dest)
+	defer zipWriter.Close()
+	tarWriter := tar.NewWriter(zipWriter)
+	defer tarWriter.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("Error getting file info: %s", err)
+	}
+	// Let's create the header
+	header := &tar.Header{
+		Name:    stat.Name(),
+		Size:    stat.Size(),
+		Mode:    0664,
+		ModTime: stat.ModTime(),
+	}
+	// write the header to the tarball archive
+	if err = tarWriter.WriteHeader(header); err != nil {
+		return fmt.Errorf("Error writing tar header for file %s", err)
+	}
+	if _, err := io.Copy(tarWriter, file); err != nil {
+		return fmt.Errorf("Error writing file %s to tar archive", err)
+	}
+	return nil
+}
+
+// UntargetTestingVolume copies test data from /<host-data-volume>/<model>/test to
+// /<host-data-volume>/<model>/untargeted_test and removes targets from files... using the problem
 // workflow container.
 func (w *Worker) UntargetTestingVolume(problemImage, testFolder, untargetedTestFolder string) (containerID string, err error) {
 	return w.containerRuntime.RunImageInUntrustedContainer(
@@ -473,12 +638,14 @@ func (w *Worker) Train(modelImage, trainFolder, testFolder, modelFolder string) 
 }
 
 // Predict launches the submission container's predict routines
-func (w *Worker) Predict(modelImage, testFolder string) (containerID string, err error) {
+func (w *Worker) Predict(modelImage, testFolder string, predFolder string, modelFolder string) (containerID string, err error) {
 	return w.containerRuntime.RunImageInUntrustedContainer(
 		modelImage,
 		[]string{"-V", "/data", "-T", "predict"},
 		map[string]string{
-			testFolder: "/data/test",
+			testFolder:  "/data/test",
+			predFolder:  "/data/test/pred",
+			modelFolder: "/data/model",
 		}, true)
 }
 
