@@ -44,7 +44,7 @@ import (
 	"gopkg.in/kataras/iris.v6/adaptors/httprouter" // <--- TODO or adaptors/gorillamux
 	"gopkg.in/kataras/iris.v6/middleware/logger"
 
-	"github.com/MorpheoOrg/go-packages/common"
+	"github.com/MorpheoOrg/morpheo-go-packages/common"
 )
 
 // TODO: write tests for the two main views

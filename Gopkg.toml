@@ -1,0 +1,7 @@
+[[constraint]]
+  name = "gopkg.in/kataras/iris.v6"
+  version = "6.2.0"
+
+[[override]]
+  name = "github.com/russross/blackfriday"
+  revision = "0ba0f2"

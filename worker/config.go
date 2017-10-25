@@ -39,7 +39,7 @@ import (
 	"flag"
 	"time"
 
-	"github.com/MorpheoOrg/go-packages/common"
+	"github.com/MorpheoOrg/morpheo-go-packages/common"
 )
 
 // ConsumerConfig holds the consumer configuration

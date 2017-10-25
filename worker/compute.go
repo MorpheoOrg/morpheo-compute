@@ -47,8 +47,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/MorpheoOrg/go-packages/client"
-	"github.com/MorpheoOrg/go-packages/common"
+	"github.com/MorpheoOrg/morpheo-go-packages/client"
+	"github.com/MorpheoOrg/morpheo-go-packages/common"
 )
 
 // Worker describes a worker (where it stores its data, which container runtime it uses...).

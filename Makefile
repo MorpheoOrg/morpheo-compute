@@ -40,18 +40,19 @@ DOCKER_TAG ?= $(shell git rev-parse --verify --short HEAD)
 # (Containerized) build commands
 BUILD_CONTAINER = \
   docker run -u $(shell id -u) -it --rm \
-	  --workdir "/usr/local/go/src/github.com/MorpheoOrg/compute" \
-	  -v $${PWD}:/usr/local/go/src/github.com/MorpheoOrg/compute:ro \
+	  --workdir "/usr/local/go/src/github.com/MorpheoOrg/morpheo-compute" \
+	  -v $${PWD}:/usr/local/go/src/github.com/MorpheoOrg/morpheo-compute:ro \
 	  -v $${PWD}/vendor:/vendor/src \
 	  -e GOPATH="/go:/vendor" \
 	  -e CGO_ENABLED=0 \
 	  -e GOOS=linux
 
-GLIDE_CONTAINER = \
+DEP_CONTAINER = \
 	docker run -it --rm \
-	  --workdir "/usr/local/go/src/github.com/MorpheoOrg/compute" \
-	  -v $${PWD}:/usr/local/go/src/github.com/MorpheoOrg/compute \
-		$(BUILD_CONTAINER_IMAGE)
+	  --workdir "/go/src/github.com/MorpheoOrg/morpheo-compute" \
+	  -v $${PWD}:/go/src/github.com/MorpheoOrg/morpheo-compute \
+	  -e GOPATH="/go:/vendor" \
+	  $(BUILD_CONTAINER_IMAGE)
 
 BUILD_CONTAINER_IMAGE = golang:1-onbuild
 
@@ -60,39 +61,39 @@ GOTEST = go test
 
 # Targets (files & phony targets)
 TARGETS = api worker
-TEST_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-test)
 BIN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-bin)
 BIN_CLEAN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-bin-clean)
+TEST_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-test)
 DOCKER_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-docker)
 DOCKER_CLEAN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-docker-clean)
 
 ## Project-wide targets
-test: $(TEST_TARGETS)
 bin: $(BIN_TARGETS)
 bin-clean: $(CLEAN_TARGETS)
+test: $(TEST_TARGETS)
 docker: $(DOCKER_TARGETS)
 docker-clean: $(DOCKER_CLEAN_TARGETS)
 
 clean: docker-clean bin-clean vendor-clean
 
 .DEFAULT: bin
-.PHONY: test bin bin-clean clean docker docker-clean clean vendor-clean \
+.PHONY: bin bin-clean test docker docker-clean clean vendor-clean \
 	      vendor-update $(TARGETS) $(TEST_TARGETS) $(BIN_TARGETS) \
 				$(BIN_CLEAN_TARGETS) $(DOCKER_TARGETS) $(DOCKER_CLEAN_TARGETS)
 .FORCE:
 
 # 1. Vendoring
-vendor: glide.yaml
-	@echo "Pulling dependencies with glide... in a build container"
+vendor: Gopkg.toml
+	@echo "Pulling dependencies with dep... in a build container"
 	rm -rf ./vendor
 	mkdir ./vendor
-	$(GLIDE_CONTAINER) bash -c \
-		"go get github.com/Masterminds/glide && glide install && chown $(shell id -u):$(shell id -g) -R ./glide.lock ./vendor"
+	$(DEP_CONTAINER) bash -c \
+		"go get -u github.com/golang/dep/cmd/dep && dep ensure && chown $(shell id -u):$(shell id -g) -R ./Gopkg.* ./vendor"
 
 vendor-update:
-	@echo "Pulling dependencies with glide... in a build container"
-	$(GLIDE_CONTAINER) bash -c \
-		"go get github.com/Masterminds/glide && glide update && chown $(shell id -u):$(shell id -g) -R ./glide.lock ./vendor"
+	@echo "Pulling dependencies with dep... in a build container"
+	$(DEP_CONTAINER) bash -c \
+		"go get github.com/golang/dep/cmd/dep && dep ensure -update && chown $(shell id -u):$(shell id -g) -R ./Gopkg.* ./vendor"
 
 vendor-clean:
 	@echo "Dropping the vendor folder"

@@ -39,7 +39,7 @@ import (
 	"flag"
 	"sync"
 
-	"github.com/MorpheoOrg/go-packages/common"
+	"github.com/MorpheoOrg/morpheo-go-packages/common"
 )
 
 // ProducerConfig Compute API configuration, subject to dynamic changes for the addresses of

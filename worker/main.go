@@ -40,8 +40,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/MorpheoOrg/go-packages/client"
-	"github.com/MorpheoOrg/go-packages/common"
+	"github.com/MorpheoOrg/morpheo-go-packages/client"
+	"github.com/MorpheoOrg/morpheo-go-packages/common"
 )
 
 func main() {
