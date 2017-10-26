@@ -51,10 +51,10 @@ import (
 
 // Available HTTP Routes
 const (
-	rootRoute   = "/"
-	healthRoute = "/health"
-	learnRoute  = "/learn"
-	predRoute   = "/pred"
+	RootRoute   = "/"
+	HealthRoute = "/health"
+	LearnRoute  = "/learn"
+	PredRoute   = "/pred"
 )
 
 type apiServer struct {
@@ -63,16 +63,29 @@ type apiServer struct {
 }
 
 func (s *apiServer) configureRoutes(app *iris.Framework) {
-	app.Get(rootRoute, s.index)
-	app.Get(healthRoute, s.health)
-	app.Post(learnRoute, s.postLearnuplet)
-	app.Post(predRoute, s.postPreduplet)
+	app.Get(RootRoute, s.index)
+	app.Get(HealthRoute, s.health)
+	app.Post(LearnRoute, s.postLearnuplet)
+	app.Post(PredRoute, s.postPreduplet)
 }
 
 func main() {
 	// App-specific config (parses CLI flags)
 	conf := NewProducerConfig()
 
+	// Set Iris App
+	app := SetIrisApp(conf)
+
+	// Main server loop
+	if conf.TLSOn() {
+		app.ListenTLS(fmt.Sprintf("%s:%d", conf.Hostname, conf.Port), conf.CertFile, conf.KeyFile)
+	} else {
+		app.Listen(fmt.Sprintf("%s:%d", conf.Hostname, conf.Port))
+	}
+}
+
+// SetIrisApp sets the application using the IRIS framework
+func SetIrisApp(conf *ProducerConfig) *iris.Framework {
 	// Iris setup
 	app := iris.New()
 	app.Adapt(iris.DevLogger())
@@ -97,8 +110,10 @@ func main() {
 		if err != nil {
 			log.Panicln(err)
 		}
+	case common.BrokerMOCK:
+		producer = &common.ProducerMOCK{}
 	default:
-		log.Panicf("Unsupported broker (%s). The only available broker is 'nsq'", conf.Broker)
+		log.Panicf("Unsupported broker (%s). Available brokers: 'nsq', 'mock'", conf.Broker)
 	}
 
 	// Handlers configuration
@@ -107,18 +122,12 @@ func main() {
 		producer: producer,
 	}
 	api.configureRoutes(app)
-
-	// Main server loop
-	if conf.TLSOn() {
-		app.ListenTLS(fmt.Sprintf("%s:%d", conf.Hostname, conf.Port), conf.CertFile, conf.KeyFile)
-	} else {
-		app.Listen(fmt.Sprintf("%s:%d", conf.Hostname, conf.Port))
-	}
+	return app
 }
 
 func (s *apiServer) index(c *iris.Context) {
 	// TODO: check broker connectivity here
-	c.JSON(iris.StatusOK, []string{rootRoute, healthRoute, learnRoute, predRoute})
+	c.JSON(iris.StatusOK, []string{RootRoute, HealthRoute, LearnRoute, PredRoute})
 }
 
 func (s *apiServer) health(c *iris.Context) {
