@@ -37,89 +37,48 @@
 DOCKER_REPO ?= registry.morpheo.io
 DOCKER_TAG ?= $(shell git rev-parse --verify --short HEAD)
 
-# (Containerized) build commands
-BUILD_CONTAINER = \
-  docker run -u $(shell id -u) -it --rm \
-	  --workdir "/usr/local/go/src/github.com/MorpheoOrg/morpheo-compute" \
-	  -v $${PWD}:/usr/local/go/src/github.com/MorpheoOrg/morpheo-compute:ro \
-	  -v $${PWD}/vendor:/vendor/src \
-	  -e GOPATH="/go:/vendor" \
-	  -e CGO_ENABLED=0 \
-	  -e GOOS=linux
-
-DEP_CONTAINER = \
-	docker run -it --rm \
-	  --workdir "/go/src/github.com/MorpheoOrg/morpheo-compute" \
-	  -v $${PWD}:/go/src/github.com/MorpheoOrg/morpheo-compute \
-	  -e GOPATH="/go:/vendor" \
-	  $(BUILD_CONTAINER_IMAGE)
-
-BUILD_CONTAINER_IMAGE = golang:1-onbuild
-
-GOBUILD = go build --installsuffix cgo --ldflags '-extldflags \"-static\"'
-GOTEST = go test
-
 # Targets (files & phony targets)
 TARGETS = api worker
-BIN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-bin)
-BIN_CLEAN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-bin-clean)
-TEST_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-test)
+BIN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)/build/target)
+BIN_CLEAN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)/build/target/clean)
 DOCKER_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-docker)
 DOCKER_CLEAN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-docker-clean)
 
 ## Project-wide targets
 bin: $(BIN_TARGETS)
-bin-clean: $(CLEAN_TARGETS)
-test: $(TEST_TARGETS)
+bin-clean: $(BIN_CLEAN_TARGETS)
 docker: $(DOCKER_TARGETS)
 docker-clean: $(DOCKER_CLEAN_TARGETS)
 
 clean: docker-clean bin-clean vendor-clean
 
 .DEFAULT: bin
-.PHONY: bin bin-clean test docker docker-clean clean vendor-clean \
-	      vendor-update $(TARGETS) $(TEST_TARGETS) $(BIN_TARGETS) \
-				$(BIN_CLEAN_TARGETS) $(DOCKER_TARGETS) $(DOCKER_CLEAN_TARGETS)
-.FORCE:
+.PHONY: bin bin-clean \
+	    vendor-update go-packages \
+		docker docker-clean $(DOCKER_TARGETS) $(DOCKER_CLEAN_TARGETS)
 
-# 1. Vendoring
+# 1. Building
+%/build/target: %/*.go
+	@echo "Building $(subst /build/target,,$(@)) binary..."
+	@mkdir -p $(@D)
+	@CGO_ENABLED=0 GOOS=linux go build -a --installsuffix cgo --ldflags '-extldflags \"-static\"' -o $@ ./$(dir $<)
+	@# TODO: $(eval OUTPUT = $(shell go build -v -o $@ ./$(subst /build/target,,$(@)) 2>&1 | grep -v "github.com/MorpheoOrg/morpheo-compute/"))
+	@# TODO: $(if $(-z $(OUTPUT)); @echo "Great Success",@echo "\n***EXTERNAL PACKAGES***\n"$(OUTPUT))
+
+%/build/target/clean:
+	@echo "Removing $(subst /build/target,,$(@)) binary..."
+	rm -f $(@D)
+
+# 2. Vendoring
 vendor: Gopkg.toml
-	@echo "Pulling dependencies with dep... in a build container"
-	rm -rf ./vendor
-	mkdir ./vendor
-	$(DEP_CONTAINER) bash -c \
-		"go get -u github.com/golang/dep/cmd/dep && dep ensure && chown $(shell id -u):$(shell id -g) -R ./Gopkg.* ./vendor"
+	@echo "Pulling dependencies with dep..."
+	dep ensure
 
 vendor-update:
-	@echo "Pulling dependencies with dep... in a build container"
-	$(DEP_CONTAINER) bash -c \
-		"go get github.com/golang/dep/cmd/dep && dep ensure -update && chown $(shell id -u):$(shell id -g) -R ./Gopkg.* ./vendor"
+	@echo "Updating dependencies with dep..."
+	dep ensure -update
 
-vendor-clean:
-	@echo "Dropping the vendor folder"
-	rm -rf ./vendor
-
-# 2. Testing
-$(TEST_TARGETS): vendor
-	@echo "Running go test in $(subst -test,,$(@)) directory"
-	$(BUILD_CONTAINER) -v $${PWD}/$(@D):/build:rw $(BUILD_CONTAINER_IMAGE) \
-    bash -c "cd $(subst -test,,$(@)) && $(GOTEST) "
-
-# 3. Compiling
-$(BIN_TARGETS):
-	@echo "Building $(subst -bin,,$(@)) binary"
-	$(MAKE) $(subst -bin,,$(@))/build/target
-
-$(BIN_CLEAN_TARGETS):
-	@echo "Removing $(subst -bin-clean,,$(@))/build directory"
-	rm -rf $(subst -bin-clean,,$(@))/build
-
-%/build/target: %/*.go vendor
-	mkdir -p $${PWD}/$(@D)
-	$(BUILD_CONTAINER) -v $${PWD}/$(@D):/build:rw $(BUILD_CONTAINER_IMAGE) \
-		$(GOBUILD) -o /build/target ./$(dir $<)
-
-# 4. Packaging
+# 3. Packaging
 $(DOCKER_TARGETS): %-docker: %/build/target
 	@echo "Building the $(DOCKER_REPO)/compute-$(subst -docker,,$(@)):$(DOCKER_TAG) Docker image"
 	docker build -t $(DOCKER_REPO)/compute-$(subst -docker,,$(@)):$(DOCKER_TAG) \
