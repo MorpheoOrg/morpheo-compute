@@ -54,12 +54,14 @@ clean: docker-clean bin-clean vendor-clean
 
 .DEFAULT: bin
 .PHONY: bin bin-clean \
-	    vendor-update go-packages \
+	    vendor-go-packages vendor-update \
+	    tests \
 		docker docker-clean $(DOCKER_TARGETS) $(DOCKER_CLEAN_TARGETS)
 
 # 1. Building
 %/build/target: %/*.go
 	@echo "Building $(subst /build/target,,$(@)) binary..."
+	@echo "---------------------------------------------------------"
 	@mkdir -p $(@D)
 	@CGO_ENABLED=0 GOOS=linux go build -a --installsuffix cgo --ldflags '-extldflags \"-static\"' -o $@ ./$(dir $<)
 	@# TODO: $(eval OUTPUT = $(shell go build -v -o $@ ./$(subst /build/target,,$(@)) 2>&1 | grep -v "github.com/MorpheoOrg/morpheo-compute/"))
@@ -74,11 +76,23 @@ vendor: Gopkg.toml
 	@echo "Pulling dependencies with dep..."
 	dep ensure
 
+vendor-go-packages:
+	@echo "Replacing vendor/morpheo-go-packages by local repository...\n"
+	@rm -rf ./vendor/github.com/MorpheoOrg
+	@mkdir ./vendor/github.com/MorpheoOrg
+	@cp -Rf ../morpheo-go-packages ./vendor/github.com/MorpheoOrg/morpheo-go-packages
+	@rm -rf ./vendor/github.com/MorpheoOrg/morpheo-go-packages/vendor
+
 vendor-update:
 	@echo "Updating dependencies with dep..."
 	dep ensure -update
 
-# 3. Packaging
+# 3. Testing
+tests: vendor-go-packages
+	go test ./api
+	go test ./worker
+
+# 4. Packaging
 $(DOCKER_TARGETS): %-docker: %/build/target
 	@echo "Building the $(DOCKER_REPO)/compute-$(subst -docker,,$(@)):$(DOCKER_TAG) Docker image"
 	docker build -t $(DOCKER_REPO)/compute-$(subst -docker,,$(@)):$(DOCKER_TAG) \

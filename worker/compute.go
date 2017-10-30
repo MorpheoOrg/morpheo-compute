@@ -88,12 +88,13 @@ func NewWorker(dataFolder, trainFolder, testFolder, untargetedTestFolder, predFo
 		perfFolder:           perfFolder,
 		untargetedTestFolder: untargetedTestFolder,
 		modelFolder:          modelFolder,
-		problemImagePrefix:   problemImagePrefix,
-		algoImagePrefix:      algoImagePrefix,
 
-		containerRuntime: containerRuntime,
-		storage:          storage,
-		orchestrator:     orchestrator,
+		problemImagePrefix: problemImagePrefix,
+		algoImagePrefix:    algoImagePrefix,
+		containerRuntime:   containerRuntime,
+
+		storage:      storage,
+		orchestrator: orchestrator,
 	}
 }
 
@@ -122,13 +123,12 @@ func (w *Worker) HandleLearn(message []byte) (err error) {
 	if err != nil {
 		// TODO: handle fatal and non-fatal errors differently and set learnuplet status to failed only
 		// if the error was fatal
-		err = w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusFailed, task.ID, task.WorkerID)
-		if err != nil {
-			return fmt.Errorf("Error setting learnuplet status to failed on the orchestrator: %s", err)
+		err2 := w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusFailed, task.ID, task.WorkerID)
+		if err2 != nil {
+			return fmt.Errorf("Error in LearnWorkflow: %s. Error setting learnuplet status to failed on the orchestrator: %s", err, err2)
 		}
 		return fmt.Errorf("Error in LearnWorkflow: %s", err)
 	}
-
 	return nil
 }
 
@@ -144,21 +144,12 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	modelFolder := filepath.Join(taskDataFolder, w.modelFolder)
 	perfFolder := filepath.Join(taskDataFolder, w.perfFolder)
 
-	err = os.MkdirAll(trainFolder, os.ModeDir)
-	if err != nil {
-		return fmt.Errorf("Error creating train folder under %s: %s", trainFolder, err)
-	}
-	err = os.MkdirAll(testFolder, os.ModeDir)
-	if err != nil {
-		return fmt.Errorf("Error creating test folder under %s: %s", testFolder, err)
-	}
-	err = os.MkdirAll(untargetedTestFolder, os.ModeDir)
-	if err != nil {
-		return fmt.Errorf("Error creating untargeted test folder under %s: %s", untargetedTestFolder, err)
-	}
-	err = os.MkdirAll(modelFolder, os.ModeDir)
-	if err != nil {
-		return fmt.Errorf("Error creating model folder under %s: %s", untargetedTestFolder, err)
+	pathList := []string{taskDataFolder, trainFolder, testFolder, untargetedTestFolder, modelFolder, perfFolder}
+	for _, path := range pathList {
+		err = os.MkdirAll(path, os.ModeDir)
+		if err != nil {
+			return fmt.Errorf("Error creating folder under %s: %s", path, err)
+		}
 	}
 
 	// Let's make sure these folders are wiped out once the task is done/failed
@@ -169,7 +160,6 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	if err != nil {
 		return fmt.Errorf("Error pulling problem workflow %s from storage: %s", task.Workflow, err)
 	}
-
 	problemImageName := fmt.Sprintf("%s-%s", w.problemImagePrefix, task.Workflow)
 	err = w.ImageLoad(problemImageName, problemWorkflow)
 	if err != nil {
@@ -289,15 +279,13 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 		return fmt.Errorf("Error reading new model archive size %s: %s", path, err)
 	}
 
-	err = w.storage.PostModel(newModel, modelArchiveReader, modelArchiveStat.Size())
-	if err != nil {
+	if err := w.storage.PostModel(newModel, modelArchiveReader, modelArchiveStat.Size()); err != nil {
 		return fmt.Errorf("Error streaming new model %s to storage: %s", task.ModelEnd, err)
 	}
 	modelArchiveReader.Close()
 
 	// Let's send the perf file to the orchestrator
 	performanceFilePath := fmt.Sprintf("%s/performance.json", perfFolder)
-	log.Println(performanceFilePath)
 	resultFile, err := os.Open(performanceFilePath)
 	if err != nil {
 		return fmt.Errorf("Error reading performance file %s: %s", performanceFilePath, err)
@@ -309,8 +297,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	}
 	perfuplet.Status = common.TaskStatusDone
 
-	err = w.orchestrator.PostLearnResult(task.ID, perfuplet)
-	if err != nil {
+	if err := w.orchestrator.PostLearnResult(task.ID, perfuplet); err != nil {
 		return fmt.Errorf("Error posting learn result %s to orchestrator: %s", task.ModelEnd, err)
 	}
 
@@ -339,8 +326,9 @@ func (w *Worker) HandlePred(message []byte) (err error) {
 	}
 
 	// Setup directory structure
-	testFolder := filepath.Join(w.dataFolder, w.testFolder)
-	modelFolder := filepath.Join(w.dataFolder, w.modelFolder)
+	taskDataFolder := filepath.Join(w.dataFolder, task.Model.String())
+	testFolder := filepath.Join(taskDataFolder, w.testFolder)
+	modelFolder := filepath.Join(taskDataFolder, w.modelFolder)
 	predFolder := filepath.Join(testFolder, w.predFolder)
 
 	err = os.MkdirAll(testFolder, os.ModeDir)
@@ -440,9 +428,9 @@ func (w *Worker) HandlePred(message []byte) (err error) {
 
 	stat, err := file.Stat()
 	if err != nil {
-		return fmt.Errorf("Error retrieving file size stat: %s", err)
+		return fmt.Errorf("Error retrieving file stat: %s", err)
 	}
-	filesize := int(stat.Size())
+	filesize := stat.Size()
 
 	// // Let's tar-gz the file
 	// var targzFile bytes.Buffer
@@ -489,7 +477,6 @@ func (w *Worker) ImageLoad(imageName string, imageReader io.Reader) error {
 		return fmt.Errorf("Error building image %s: %s", imageName, err)
 	}
 	defer image.Close()
-
 	return w.containerRuntime.ImageLoad(imageName, image)
 }
 
@@ -608,6 +595,25 @@ func TargzFile(file *os.File, dest io.Writer) error {
 	}
 	if _, err := io.Copy(tarWriter, file); err != nil {
 		return fmt.Errorf("Error writing file %s to tar archive", err)
+	}
+	return nil
+}
+
+// SetupDirectories creates all the required directory. Useful for testing
+func (w *Worker) SetupDirectories(taskDataFolder string, filemode os.FileMode) error {
+	trainFolder := filepath.Join(taskDataFolder, w.trainFolder)
+	testFolder := filepath.Join(taskDataFolder, w.testFolder)
+	modelFolder := filepath.Join(taskDataFolder, w.modelFolder)
+	predFolder := filepath.Join(testFolder, w.predFolder)
+	untargetedTestFolder := filepath.Join(taskDataFolder, w.untargetedTestFolder)
+	perfFolder := filepath.Join(taskDataFolder, w.perfFolder)
+
+	pathList := []string{taskDataFolder, trainFolder, testFolder, modelFolder, predFolder, untargetedTestFolder, perfFolder}
+	for _, path := range pathList {
+		err := os.MkdirAll(path, filemode)
+		if err != nil {
+			return fmt.Errorf("Error creating folder under %s: %s", path, err)
+		}
 	}
 	return nil
 }

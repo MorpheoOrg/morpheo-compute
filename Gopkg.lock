@@ -26,6 +26,12 @@
   version = "v0.1.0"
 
 [[projects]]
+  name = "github.com/ajg/form"
+  packages = ["."]
+  revision = "cc2954064ec9ea8d93917f0f87456e11d7b881ad"
+  version = "v1.5"
+
+[[projects]]
   name = "github.com/aws/aws-sdk-go"
   packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
   revision = "f426770fd5a4bae6186b280d4af7dca83a4cdef4"
@@ -60,6 +66,18 @@
   packages = ["."]
   revision = "0dadbb0345b35ec7ef35e228dabb8de89a65bf52"
   version = "v0.3.2"
+
+[[projects]]
+  name = "github.com/fatih/structs"
+  packages = ["."]
+  revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
+  version = "v1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gavv/monotime"
+  packages = ["."]
+  revision = "6f8212e8d10df7383609d3c377ca08884d8f3ec0"
 
 [[projects]]
   name = "github.com/geekypanda/httpcache"
@@ -104,10 +122,22 @@
   version = "0.2.4"
 
 [[projects]]
+  name = "github.com/imkira/go-interpol"
+  packages = ["."]
+  revision = "5accad8134979a6ac504d456a6c7f1c53da237ca"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/iris-contrib/formBinder"
   packages = ["."]
   revision = "39c8cd740c8f5a6831bec11c534a850e02c342a3"
   version = "v4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/iris-contrib/httpexpect"
+  packages = ["."]
+  revision = "65e93247e7071782e760f82086e8b677cca0c78a"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
@@ -145,6 +175,12 @@
   revision = "68fecaef60268522d2ac3f0123cec9d3bcab7b6e"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/moul/http2curl"
+  packages = ["."]
+  revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
+
+[[projects]]
   name = "github.com/nsqio/go-nsq"
   packages = ["."]
   revision = "eee57a3ac4174c55924125bb15eeeda8cffb6e6f"
@@ -174,8 +210,14 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/sergi/go-diff"
+  packages = ["diffmatchpatch"]
+  revision = "feef008d51ad2b3778f85d387ccf91735543008d"
+
+[[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert"]
+  packages = ["assert","require"]
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
 
@@ -193,6 +235,42 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/xeipuuv/gojsonpointer"
+  packages = ["."]
+  revision = "6fe8760cad3569743d51ddbb243b26f8456742dc"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/xeipuuv/gojsonreference"
+  packages = ["."]
+  revision = "e02fc20de94c78484cd5ffb007f8af96be030a45"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/xeipuuv/gojsonschema"
+  packages = ["."]
+  revision = "212d8a0df7acfab8bdd190a7a69f0ab7376edcc8"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/yalp/jsonpath"
+  packages = ["."]
+  revision = "31a79c7593bb93eb10b163650d4a3e6ca190e4dc"
+
+[[projects]]
+  name = "github.com/yudai/gojsondiff"
+  packages = [".","formatter"]
+  revision = "7b1b7adf999dab73a6eb02669c3d82dbb27a3dd6"
+  version = "1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/yudai/golcs"
+  packages = ["."]
+  revision = "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/crypto"
   packages = ["acme","acme/autocert"]
   revision = "2509b142fb2b797aa7587dad548f113b2c0f20ce"
@@ -200,7 +278,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","html","html/atom","proxy"]
+  packages = ["context","context/ctxhttp","html","html/atom","idna","proxy","publicsuffix"]
   revision = "4b14673ba32bee7f5ac0f990a48f033919fd418b"
 
 [[projects]]
@@ -210,8 +288,14 @@
   revision = "3e3646d2c706c21b222a5dbcaa6db12b3e0cc765"
 
 [[projects]]
+  branch = "master"
+  name = "golang.org/x/text"
+  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
+  revision = "6eab0e8f74e86c598ec3b6fad4888e0c11482d48"
+
+[[projects]]
   name = "gopkg.in/kataras/iris.v6"
-  packages = [".","adaptors/httprouter","middleware/logger"]
+  packages = [".","adaptors/httprouter","httptest","middleware/logger"]
   revision = "09a2066268f99fc8ee40ecddde8b415f76250f4b"
   version = "v6.2"
 
@@ -224,6 +308,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "15c6e1f62616289102e37d28122997bf621c168dda9cb8d9ec8aa526b94083e1"
+  inputs-digest = "a0c46942a6d735b29ef5e0c5bcea9ee5a9cd60dd101e70f513bd56b61848e15a"
   solver-name = "gps-cdcl"
   solver-version = 1
