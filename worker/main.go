@@ -102,6 +102,7 @@ func main() {
 	// Let's hook with our consumer
 	consumer := common.NewNSQConsumer(
 		conf.NsqlookupdURLs,
+		conf.NsqdURL,
 		"compute",
 		5*time.Second,
 		log.New(os.Stdout, "[NSQ]", log.LstdFlags),
@@ -111,6 +112,9 @@ func main() {
 	consumer.AddHandler(common.TrainTopic, worker.HandleLearn, conf.LearnParallelism, conf.LearnTimeout)
 	consumer.AddHandler(common.PredictTopic, worker.HandlePred, conf.PredictParallelism, conf.PredictTimeout)
 
+	if err != nil {
+		log.Panicln(err)
+	}
 	// Let's connect to the for real and start pulling tasks
 	consumer.ConsumeUntilKilled()
 

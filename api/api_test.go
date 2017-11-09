@@ -7,6 +7,8 @@ import (
 	. "github.com/MorpheoOrg/morpheo-compute/api"
 	"gopkg.in/kataras/iris.v6"
 	"gopkg.in/kataras/iris.v6/httptest"
+
+	"github.com/MorpheoOrg/morpheo-go-packages/common"
 )
 
 var (
@@ -45,8 +47,8 @@ var (
 func TestMain(m *testing.M) {
 	// Set test App
 	conf := NewProducerConfig()
-	app = SetIrisApp(conf)
-
+	producer := &common.ProducerMOCK{}
+	app = SetIrisApp(conf, producer)
 	os.Exit(m.Run())
 }
 

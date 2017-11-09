@@ -100,7 +100,7 @@ func NewWorker(dataFolder, trainFolder, testFolder, untargetedTestFolder, predFo
 
 // HandleLearn manages a learning task (orchestrator status updates, etc...)
 func (w *Worker) HandleLearn(message []byte) (err error) {
-	log.Println("[DEBUG] Starting learning task")
+	log.Println("[DEBUG][learn] Starting learning task")
 
 	// Unmarshal the learn-uplet
 	var task common.LearnUplet
@@ -132,9 +132,43 @@ func (w *Worker) HandleLearn(message []byte) (err error) {
 	return nil
 }
 
+// HandlePred manages a prediction task (orchestrator status updates, etc...)
+func (w *Worker) HandlePred(message []byte) (err error) {
+	log.Println("[DEBUG][pred] Starting predicting task")
+
+	// Unmarshal the learn-uplet
+	var task common.Preduplet
+	err = json.NewDecoder(bytes.NewReader(message)).Decode(&task)
+	if err != nil {
+		return fmt.Errorf("Error un-marshaling preduplet: %s -- Body: %s", err, message)
+	}
+
+	if err = task.Check(); err != nil {
+		return fmt.Errorf("Error in pred task: %s -- Body: %s", err, message)
+	}
+
+	// Update its status to pending on the orchestrator
+	err = w.orchestrator.UpdateUpletStatus(common.TypePredUplet, common.TaskStatusPending, task.ID, task.WorkerID)
+	if err != nil {
+		return fmt.Errorf("Error setting preduplet status to pending on the orchestrator: %s", err)
+	}
+
+	err = w.PredWorkflow(task)
+	if err != nil {
+		// TODO: handle fatal and non-fatal errors differently and set preduplet status to failed only
+		// if the error was fatal
+		err2 := w.orchestrator.UpdateUpletStatus(common.TypePredUplet, common.TaskStatusFailed, task.ID, task.WorkerID)
+		if err2 != nil {
+			return fmt.Errorf("2 Errors: Error in PredWorkflow: %s. Error setting preduplet status to failed on the orchestrator: %s", err, err2)
+		}
+		return fmt.Errorf("Error in PredWorkflow: %s", err)
+	}
+	return nil
+}
+
 // LearnWorkflow implements our learning workflow
 func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
-	log.Println("[DEBUG] Starting learning workflow")
+	log.Println("[DEBUG][learn] Starting learning workflow")
 
 	// Setup directory structure
 	taskDataFolder := filepath.Join(w.dataFolder, task.Algo.String())
@@ -168,6 +202,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	problemWorkflow.Close()
 	defer w.containerRuntime.ImageUnload(problemImageName)
 
+	log.Println("[DEBUG][learn] 1st Image loaded")
 	// Load algo
 	algo, err := w.storage.GetAlgoBlob(task.Algo)
 	if err != nil {
@@ -234,7 +269,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	// Let's copy test data into untargetedTestFolder and remove targets
 	_, err = w.UntargetTestingVolume(problemImageName, testFolder, untargetedTestFolder)
 	if err != nil {
-		return fmt.Errorf("Error preparing problem %s for %s: %s", task.Workflow, task.ModelStart, err)
+		return fmt.Errorf("Error preparing problem %s for model %s: %s", task.Workflow, task.ModelStart, err)
 	}
 
 	// Let's pass the task to our execution backend, now that everything should be in place
@@ -304,26 +339,14 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	resultFile.Close()
 	os.Remove(performanceFilePath)
 
-	log.Printf("[INFO] Train finished with success, cleaning up...")
+	log.Printf("[INFO][learn] Train finished with success, cleaning up...")
 
 	return
 }
 
-// HandlePred handles our prediction tasks
-func (w *Worker) HandlePred(message []byte) (err error) {
-	log.Println("[DEBUG] Starting prediction task")
-
-	// Unmarshal the pred-uplet
-	var task common.Preduplet
-	err = json.NewDecoder(bytes.NewReader(message)).Decode(&task)
-	if err != nil {
-		return fmt.Errorf("Error un-marshaling pred-uplet: %s -- Body: %s", err, message)
-	}
-
-	// Check that the pred-uplet is valid
-	if err = task.Check(); err != nil {
-		return fmt.Errorf("Error in pred task: %s -- Body: %s", err, message)
-	}
+// PredWorkflow handles our prediction tasks
+func (w *Worker) PredWorkflow(task common.Preduplet) (err error) {
+	log.Println("[DEBUG][pred] Starting predicting workflow")
 
 	// Setup directory structure
 	taskDataFolder := filepath.Join(w.dataFolder, task.Model.String())
@@ -441,7 +464,7 @@ func (w *Worker) HandlePred(message []byte) (err error) {
 	// }
 
 	// Send the prediction to storage
-	log.Println("[DEBUG] sending the predictions to Storage...")
+	log.Println("[DEBUG][pred] sending the predictions to Storage...")
 	newPrediction := common.NewPrediction()
 	err = w.storage.PostPrediction(newPrediction, file, filesize)
 	if err != nil {
@@ -449,7 +472,7 @@ func (w *Worker) HandlePred(message []byte) (err error) {
 	}
 
 	// Send status and prediction address to Orchestrator
-	log.Println("[DEBUG] sending the status and prediction UUID to Orchestrator...")
+	log.Println("[DEBUG][pred] sending the status and prediction UUID to Orchestrator...")
 	preddone := client.Preddone{
 		Status:              common.TaskStatusDone,
 		PredictionStorageID: newPrediction.ID,
@@ -459,7 +482,7 @@ func (w *Worker) HandlePred(message []byte) (err error) {
 		return fmt.Errorf("Error setting preduplet status to 'done' on the orchestrator: %s", err)
 	}
 
-	log.Printf("[INFO] Prediction finished with success, cleaning up...")
+	log.Printf("[INFO][pred] Prediction finished with success, cleaning up...")
 	return nil
 }
 
@@ -477,6 +500,8 @@ func (w *Worker) ImageLoad(imageName string, imageReader io.Reader) error {
 		return fmt.Errorf("Error building image %s: %s", imageName, err)
 	}
 	defer image.Close()
+
+	log.Printf("[DEBUG][containerRuntime] Loading image %s...", imageName)
 	return w.containerRuntime.ImageLoad(imageName, image)
 }
 
@@ -543,8 +568,6 @@ func (w *Worker) TargzFolder(folder string, dest io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("Error removing %s component from path %s: %s", folder, path, err)
 		}
-
-		log.Printf("Sending %s to archive", filename)
 
 		file, err := os.Open(path)
 		if err != nil {

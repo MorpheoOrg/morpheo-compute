@@ -46,6 +46,7 @@ import (
 type ConsumerConfig struct {
 	// Broker
 	NsqlookupdURLs     []string
+	NsqdURL            string
 	LearnParallelism   int
 	PredictParallelism int
 	LearnTimeout       time.Duration
@@ -70,6 +71,7 @@ type ConsumerConfig struct {
 func NewConsumerConfig() (conf *ConsumerConfig) {
 	var (
 		nsqlookupdURLs     common.MultiStringFlag
+		nsqdURL            string
 		learnParallelism   int
 		predictParallelism int
 		learnTimeout       time.Duration
@@ -90,6 +92,7 @@ func NewConsumerConfig() (conf *ConsumerConfig) {
 
 	// CLI Flags
 	flag.Var(&nsqlookupdURLs, "nsqlookupd-urls", "URL(s) of NSQLookupd instances to connect to")
+	flag.StringVar(&nsqdURL, "http-address", "nsqd:4151", "URL of NSQd instance to connect to")
 	flag.IntVar(&learnParallelism, "learn-parallelism", 1, "Number of learning task that this worker can execute in parallel.")
 	flag.IntVar(&predictParallelism, "predict-parallelism", 1, "Number of learning task that this worker can execute in parallel.")
 	flag.DurationVar(&learnTimeout, "learn-timeout", 20*time.Minute, "After this delay, learning tasks are timed out (default: 20m)")
@@ -115,6 +118,7 @@ func NewConsumerConfig() (conf *ConsumerConfig) {
 
 	return &ConsumerConfig{
 		NsqlookupdURLs:     nsqlookupdURLs,
+		NsqdURL:            nsqdURL,
 		LearnParallelism:   learnParallelism,
 		PredictParallelism: predictParallelism,
 		LearnTimeout:       learnTimeout,

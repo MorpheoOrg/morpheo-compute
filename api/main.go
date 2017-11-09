@@ -69,23 +69,8 @@ func (s *apiServer) configureRoutes(app *iris.Framework) {
 	app.Post(PredRoute, s.postPreduplet)
 }
 
-func main() {
-	// App-specific config (parses CLI flags)
-	conf := NewProducerConfig()
-
-	// Set Iris App
-	app := SetIrisApp(conf)
-
-	// Main server loop
-	if conf.TLSOn() {
-		app.ListenTLS(fmt.Sprintf("%s:%d", conf.Hostname, conf.Port), conf.CertFile, conf.KeyFile)
-	} else {
-		app.Listen(fmt.Sprintf("%s:%d", conf.Hostname, conf.Port))
-	}
-}
-
-// SetIrisApp sets the application using the IRIS framework
-func SetIrisApp(conf *ProducerConfig) *iris.Framework {
+// SetIrisApp sets the base for the Iris App
+func SetIrisApp(conf *ProducerConfig, producer common.Producer) *iris.Framework {
 	// Iris setup
 	app := iris.New()
 	app.Adapt(iris.DevLogger())
@@ -99,6 +84,19 @@ func SetIrisApp(conf *ProducerConfig) *iris.Framework {
 		Path:   true,
 	})
 	app.Use(customLogger)
+
+	// Handlers configuration
+	api := &apiServer{
+		conf:     conf,
+		producer: producer,
+	}
+	api.configureRoutes(app)
+	return app
+}
+
+func main() {
+	// App-specific config (parses CLI flags)
+	conf := NewProducerConfig()
 
 	// Let's dependency inject the producer for the chosen Broker
 	var producer common.Producer
@@ -116,13 +114,14 @@ func SetIrisApp(conf *ProducerConfig) *iris.Framework {
 		log.Panicf("Unsupported broker (%s). Available brokers: 'nsq', 'mock'", conf.Broker)
 	}
 
-	// Handlers configuration
-	api := &apiServer{
-		conf:     conf,
-		producer: producer,
+	app := SetIrisApp(conf, producer)
+
+	// Main server loop
+	if conf.TLSOn() {
+		app.ListenTLS(fmt.Sprintf("%s:%d", conf.Hostname, conf.Port), conf.CertFile, conf.KeyFile)
+	} else {
+		app.Listen(fmt.Sprintf("%s:%d", conf.Hostname, conf.Port))
 	}
-	api.configureRoutes(app)
-	return app
 }
 
 func (s *apiServer) index(c *iris.Context) {
