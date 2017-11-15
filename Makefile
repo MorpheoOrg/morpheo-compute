@@ -44,6 +44,12 @@ BIN_CLEAN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)/build/target/clean)
 DOCKER_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-docker)
 DOCKER_CLEAN_TARGETS = $(foreach TARGET,$(TARGETS),$(TARGET)-docker-clean)
 
+DEP_CONTAINER = \
+	docker run -it --rm \
+	  --workdir "/go/src/github.com/MorpheoOrg/morpheo-compute" \
+	  -v $${PWD}:/go/src/github.com/MorpheoOrg/morpheo-compute \
+		golang:1.9
+
 ## Project-wide targets
 bin: $(BIN_TARGETS)
 bin-clean: $(BIN_CLEAN_TARGETS)
@@ -54,7 +60,7 @@ clean: docker-clean bin-clean vendor-clean
 
 .DEFAULT: bin
 .PHONY: bin bin-clean \
-	    vendor-update vendor-replace-local \
+	    vendor-docker vendor-update vendor-replace-local \
 	    tests \
 		docker docker-clean $(DOCKER_TARGETS) $(DOCKER_CLEAN_TARGETS)
 
@@ -74,6 +80,14 @@ clean: docker-clean bin-clean vendor-clean
 vendor: Gopkg.toml
 	@echo "Pulling dependencies with dep..."
 	dep ensure
+
+# build vendor in a container
+vendor-docker:
+	@echo "Pulling dependencies with dep... in a container"
+	rm -rf ./vendor
+	mkdir ./vendor
+	$(DEP_CONTAINER) bash -c \
+		"go get -u github.com/golang/dep/cmd/dep && dep ensure && chown $(shell id -u):$(shell id -g) -R ./Gopkg.lock ./vendor"
 
 vendor-update:
 	@echo "Updating dependencies with dep..."
