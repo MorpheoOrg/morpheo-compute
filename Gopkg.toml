@@ -1,7 +1,20 @@
 [[constraint]]
+  name = "github.com/MorpheoOrg/morpheo-go-packages"
+  branch = "master"
+
+[[constraint]]
   name = "gopkg.in/kataras/iris.v6"
   version = "6.2.0"
+  source = "https://github.com/MorpheoOrg/iris.git"
 
 [[override]]
   name = "github.com/russross/blackfriday"
   revision = "0ba0f2"
+
+[[constraint]]
+  name = "github.com/satori/go.uuid"
+  version = "1.1.0"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.1.4"
