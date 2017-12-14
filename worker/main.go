@@ -40,6 +40,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/satori/go.uuid"
+
 	"github.com/MorpheoOrg/morpheo-go-packages/client"
 	"github.com/MorpheoOrg/morpheo-go-packages/common"
 )
@@ -60,18 +62,16 @@ func main() {
 	// 	storageBackend = client.NewStorageAPIMock()
 	// }
 
-	// And with the orchestrator
-	var orchestratorBackend client.Orchestrator
-	// if conf.OrchestratorHost != "" {
-	orchestratorBackend = &client.OrchestratorAPI{
-		Hostname: conf.OrchestratorHost,
-		Port:     conf.OrchestratorPort,
-		User:     conf.OrchestratorUser,
-		Password: conf.OrchestratorPassword,
+	// Let's create our peer client to request the blockchain
+	peer, err := client.NewPeerAPI(
+		"secrets/config.yaml",
+		"Aphp",
+		"mychannel",
+		"mycc",
+	)
+	if err != nil {
+		log.Panicf("Error creating peer client: %s", err)
 	}
-	//} else {
-	//	orchestratorBackend = client.NewOrchestratorAPIMock()
-	//}
 
 	// Let's hook to our container backend and create a Worker instance containing
 	// our message handlers
@@ -81,6 +81,7 @@ func main() {
 	}
 
 	worker := &Worker{
+		ID: uuid.NewV4(),
 		// Root folder for train/test/predict data (should shared with the container runtime)
 		dataFolder: "/data",
 		// Subfolder names
@@ -96,7 +97,7 @@ func main() {
 		// Dependency injection is done here :)
 		containerRuntime: containerRuntime,
 		storage:          storageBackend,
-		orchestrator:     orchestratorBackend,
+		peer:             peer,
 	}
 
 	// Let's hook with our consumer

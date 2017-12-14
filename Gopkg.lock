@@ -20,22 +20,22 @@
   version = "v0.4.5"
 
 [[projects]]
-  branch = "max/dep-management"
+  branch = "master"
   name = "github.com/MorpheoOrg/morpheo-go-packages"
   packages = ["client","common"]
-  revision = "f6a2aa5eb8d159080b6514ee3715eaca8661f25b"
-
-[[projects]]
-  name = "github.com/ajg/form"
-  packages = ["."]
-  revision = "cc2954064ec9ea8d93917f0f87456e11d7b881ad"
-  version = "v1.5"
+  revision = "4fc7e91ccfc250d45aba3fe867d8f33d32f9600b"
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
   packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
-  revision = "cd721c97ef6fcfcb76b4feb14fcfead57fb01e5e"
-  version = "v1.12.33"
+  revision = "0c22c3d22be15d3be3d22b8dedabbf5dd4304730"
+  version = "v1.12.34"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/cloudflare/cfssl"
+  packages = ["api","auth","certdb","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","log","ocsp/config","signer"]
+  revision = "e4178260e43e9a17d1a4f2d6a7efd5bc7273a044"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -68,16 +68,10 @@
   version = "v0.3.2"
 
 [[projects]]
-  name = "github.com/fatih/structs"
+  name = "github.com/fsnotify/fsnotify"
   packages = ["."]
-  revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
-  version = "v1.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/gavv/monotime"
-  packages = ["."]
-  revision = "6f8212e8d10df7383609d3c377ca08884d8f3ec0"
+  revision = "629574ca2a5df945712d3079857300b5e4da0236"
+  version = "v1.4.2"
 
 [[projects]]
   name = "github.com/geekypanda/httpcache"
@@ -105,9 +99,15 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/google/certificate-transparency-go"
+  packages = [".","asn1","tls","x509","x509/pkix"]
+  revision = "96d0882a11ef3ac0b43ad09b078d4017c26e05e9"
+
+[[projects]]
+  branch = "master"
   name = "github.com/google/go-github"
   packages = ["github"]
-  revision = "414302483313784b058d0c1f3abb9b9e4e6adcea"
+  revision = "a89ea1cdf79929726a9416663609269ada774da0"
 
 [[projects]]
   branch = "master"
@@ -128,28 +128,28 @@
   revision = "fc61389e27c71d120f87031ca8c88a3428f372dd"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/hcl"
+  packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
+  revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hyperledger/fabric-sdk-go"
+  packages = ["api/apiconfig","api/apicryptosuite","api/apifabca","api/apifabclient","api/apilogging","api/apitxn","api/apitxn/chmgmtclient","api/apitxn/resmgmtclient","def/fabapi","def/fabapi/context","def/fabapi/context/defprovider","def/fabapi/opt","internal/github.com/hyperledger/fabric-ca/api","internal/github.com/hyperledger/fabric-ca/lib","internal/github.com/hyperledger/fabric-ca/lib/tls","internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge","internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge","internal/github.com/hyperledger/fabric-ca/util","internal/github.com/hyperledger/fabric/bccsp","internal/github.com/hyperledger/fabric/bccsp/factory","internal/github.com/hyperledger/fabric/bccsp/pkcs11","internal/github.com/hyperledger/fabric/bccsp/signer","internal/github.com/hyperledger/fabric/bccsp/sw","internal/github.com/hyperledger/fabric/bccsp/utils","internal/github.com/hyperledger/fabric/common/channelconfig","internal/github.com/hyperledger/fabric/common/crypto","internal/github.com/hyperledger/fabric/common/util","internal/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil","internal/github.com/hyperledger/fabric/core/ledger/util","internal/github.com/hyperledger/fabric/events/consumer","internal/github.com/hyperledger/fabric/msp","internal/github.com/hyperledger/fabric/protos/orderer","internal/github.com/hyperledger/fabric/protos/utils","internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge","internal/github.com/hyperledger/fabric/sdkpatch/logbridge","pkg/config","pkg/config/urlutil","pkg/cryptosuite","pkg/cryptosuite/bccsp","pkg/errors","pkg/fabric-ca-client","pkg/fabric-client","pkg/fabric-client/channel","pkg/fabric-client/credentialmgr","pkg/fabric-client/events","pkg/fabric-client/events/consumer","pkg/fabric-client/identity","pkg/fabric-client/internal","pkg/fabric-client/internal/txnproc","pkg/fabric-client/keyvaluestore","pkg/fabric-client/mocks","pkg/fabric-client/orderer","pkg/fabric-client/peer","pkg/fabric-client/signingmgr","pkg/fabric-txn/chclient","pkg/fabric-txn/chmgmtclient","pkg/fabric-txn/discovery/staticdiscovery","pkg/fabric-txn/internal","pkg/fabric-txn/resmgmtclient","pkg/fabric-txn/selection/staticselection","pkg/logging","pkg/logging/deflogger","pkg/logging/utils","third_party/github.com/hyperledger/fabric/protos/common","third_party/github.com/hyperledger/fabric/protos/ledger/rwset","third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset","third_party/github.com/hyperledger/fabric/protos/msp","third_party/github.com/hyperledger/fabric/protos/orderer","third_party/github.com/hyperledger/fabric/protos/peer"]
+  revision = "9dad8aeef1cad811762f1c476eb6fdf459836471"
+
+[[projects]]
   name = "github.com/imdario/mergo"
   packages = ["."]
   revision = "7fe0c75c13abdee74b09fcacef5ea1c6bba6a874"
   version = "0.2.4"
 
 [[projects]]
-  name = "github.com/imkira/go-interpol"
-  packages = ["."]
-  revision = "5accad8134979a6ac504d456a6c7f1c53da237ca"
-  version = "v1.1.0"
-
-[[projects]]
   name = "github.com/iris-contrib/formBinder"
   packages = ["."]
   revision = "39c8cd740c8f5a6831bec11c534a850e02c342a3"
   version = "v4"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/iris-contrib/httpexpect"
-  packages = ["."]
-  revision = "65e93247e7071782e760f82086e8b677cca0c78a"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
@@ -181,6 +181,12 @@
   version = "v1.1"
 
 [[projects]]
+  name = "github.com/magiconair/properties"
+  packages = ["."]
+  revision = "be5ece7dd465ab0765a9682137865547526d1dfb"
+  version = "v1.7.3"
+
+[[projects]]
   branch = "master"
   name = "github.com/microcosm-cc/bluemonday"
   packages = ["."]
@@ -188,9 +194,15 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/moul/http2curl"
+  name = "github.com/miekg/pkcs11"
   packages = ["."]
-  revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
+  revision = "694c80ab67e3b197690c5ba8a11f0ecdf7a90c93"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  revision = "06020f85339e21b2478f756a78e295255ffa4d6a"
 
 [[projects]]
   name = "github.com/nsqio/go-nsq"
@@ -199,10 +211,16 @@
   version = "v1.0.7"
 
 [[projects]]
+  name = "github.com/pelletier/go-toml"
+  packages = ["."]
+  revision = "16398bac157da96aa88f98a2df640c7f32af1da2"
+  version = "v1.0.1"
+
+[[projects]]
+  branch = "master"
   name = "github.com/pkg/errors"
   packages = ["."]
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "f15c970de5b76fac0b59abb32d62c17cc7bed265"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -222,14 +240,38 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/spf13/afero"
+  packages = [".","mem"]
+  revision = "8d919cbe7e2627e417f3e45c3c0e489a5b7e2536"
+  version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/spf13/cast"
+  packages = ["."]
+  revision = "acbeb36b902d72a7a4c18e8f3241075e7ab763e4"
+  version = "v1.1.0"
+
+[[projects]]
   branch = "master"
-  name = "github.com/sergi/go-diff"
-  packages = ["diffmatchpatch"]
-  revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
+  name = "github.com/spf13/jwalterweatherman"
+  packages = ["."]
+  revision = "12bd96e66386c1960ab0f74ced1362f66f552f7b"
+
+[[projects]]
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
+  version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/spf13/viper"
+  packages = ["."]
+  revision = "25b30aa063fc18e48662b86996252eabdcf2f0c7"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert","require"]
+  packages = ["assert"]
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
 
@@ -247,51 +289,15 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/xeipuuv/gojsonpointer"
-  packages = ["."]
-  revision = "6fe8760cad3569743d51ddbb243b26f8456742dc"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/xeipuuv/gojsonreference"
-  packages = ["."]
-  revision = "e02fc20de94c78484cd5ffb007f8af96be030a45"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/xeipuuv/gojsonschema"
-  packages = ["."]
-  revision = "212d8a0df7acfab8bdd190a7a69f0ab7376edcc8"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/yalp/jsonpath"
-  packages = ["."]
-  revision = "31a79c7593bb93eb10b163650d4a3e6ca190e4dc"
-
-[[projects]]
-  name = "github.com/yudai/gojsondiff"
-  packages = [".","formatter"]
-  revision = "7b1b7adf999dab73a6eb02669c3d82dbb27a3dd6"
-  version = "1.0.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/yudai/golcs"
-  packages = ["."]
-  revision = "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["acme","acme/autocert"]
-  revision = "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94"
+  packages = ["acme","acme/autocert","ocsp","pkcs12","pkcs12/internal/rc2","sha3"]
+  revision = "365904b0f3154c6e11a9cf541c9803d1dca0445a"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","html","html/atom","http2","http2/hpack","idna","internal/timeseries","lex/httplex","proxy","publicsuffix","trace"]
-  revision = "c7086645de248775cbf2373cf5ca4d2fa664b8c1"
+  packages = ["context","context/ctxhttp","html","html/atom","http2","http2/hpack","idna","internal/timeseries","lex/httplex","proxy","trace"]
+  revision = "fc492d2e106922eb3aa4bca863d55e882c087ae3"
 
 [[projects]]
   branch = "master"
@@ -301,21 +307,27 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/sync"
+  packages = ["syncmap"]
+  revision = "fd80eb99c8f653c847d294a001bdf2a3a6f768f5"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
-  packages = ["windows"]
-  revision = "82aafbf43bf885069dc71b7e7c2f9d7a614d47da"
+  packages = ["unix","windows"]
+  revision = "a204229cd828a74741ee7b5da9bf4794497f85ed"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "88f656faf3f37f690df1a32515b479415e1a6769"
+  revision = "572a2b141f625f4360cf42a41a43622067e0510b"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
   packages = ["gensupport","googleapi","googleapi/internal/uritemplates","googleapi/transport","internal","iterator","option","storage/v1","transport/http"]
-  revision = "92db9b55d2aa90e54a33cfaa8caf354afae68157"
+  revision = "b804618854e387dc7fdd9e50496183ddcbb4b120"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -337,7 +349,7 @@
 
 [[projects]]
   name = "gopkg.in/kataras/iris.v6"
-  packages = [".","adaptors/httprouter","httptest","middleware/logger"]
+  packages = [".","adaptors/httprouter","middleware/logger"]
   revision = "09a2066268f99fc8ee40ecddde8b415f76250f4b"
   source = "https://github.com/MorpheoOrg/iris.git"
   version = "v6.2"
@@ -351,6 +363,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e7a313780c0b85e459d3f96817f57a9add07d0b216d2506798a4c2bcefd40760"
+  inputs-digest = "0859b0c4dc632b03b4b6b34fc0024979a0920b2c9d94c5a6a5878f2d7ba83f11"
   solver-name = "gps-cdcl"
   solver-version = 1

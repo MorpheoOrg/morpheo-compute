@@ -42,10 +42,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
+	// "io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/satori/go.uuid"
 
 	"github.com/MorpheoOrg/morpheo-go-packages/client"
 	"github.com/MorpheoOrg/morpheo-go-packages/common"
@@ -59,6 +61,7 @@ import (
 // awesome example: https://github.com/MorpheoOrg/hypnogram-wf
 // The doc also gets there in detail: https://morpheoorg.github.io/morpheo/modules/learning.html
 type Worker struct {
+	ID uuid.UUID
 	// Worker configuration variables
 	dataFolder           string
 	trainFolder          string
@@ -74,13 +77,22 @@ type Worker struct {
 	containerRuntime common.ContainerRuntime
 
 	// Morpheo API clients
-	storage      client.Storage
-	orchestrator client.Orchestrator
+	storage client.Storage
+	peer    client.Peer
+}
+
+// Perfuplet describes the performance.json file, an output of learning tasks
+type Perfuplet struct {
+	Perf      float64            `json:"perf"`
+	TrainPerf map[string]float64 `json:"train_perf"`
+	TestPerf  map[string]float64 `json:"test_perf"`
 }
 
 // NewWorker creates a Worker instance
-func NewWorker(dataFolder, trainFolder, testFolder, untargetedTestFolder, predFolder, perfFolder, modelFolder, problemImagePrefix, algoImagePrefix string, containerRuntime common.ContainerRuntime, storage client.Storage, orchestrator client.Orchestrator) *Worker {
+func NewWorker(dataFolder, trainFolder, testFolder, untargetedTestFolder, predFolder, perfFolder, modelFolder, problemImagePrefix, algoImagePrefix string, containerRuntime common.ContainerRuntime, storage client.Storage, peer client.Peer) *Worker {
 	return &Worker{
+		ID: uuid.NewV4(),
+
 		dataFolder:           dataFolder,
 		trainFolder:          trainFolder,
 		testFolder:           testFolder,
@@ -93,17 +105,17 @@ func NewWorker(dataFolder, trainFolder, testFolder, untargetedTestFolder, predFo
 		algoImagePrefix:    algoImagePrefix,
 		containerRuntime:   containerRuntime,
 
-		storage:      storage,
-		orchestrator: orchestrator,
+		storage: storage,
+		peer:    peer,
 	}
 }
 
-// HandleLearn manages a learning task (orchestrator status updates, etc...)
+// HandleLearn manages a learning task (peer status updates, etc...)
 func (w *Worker) HandleLearn(message []byte) (err error) {
 	log.Println("[DEBUG][learn] Starting learning task")
 
 	// Unmarshal the learn-uplet
-	var task common.LearnUplet
+	var task common.Learnuplet
 	err = json.NewDecoder(bytes.NewReader(message)).Decode(&task)
 	if err != nil {
 		return fmt.Errorf("Error un-marshaling learn-uplet: %s -- Body: %s", err, message)
@@ -113,62 +125,64 @@ func (w *Worker) HandleLearn(message []byte) (err error) {
 		return fmt.Errorf("Error in train task: %s -- Body: %s", err, message)
 	}
 
-	// Update its status to pending on the orchestrator
-	err = w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusPending, task.ID, task.WorkerID)
+	// Update its status to pending on the peer
+	_, _, err = w.peer.SetUpletWorker(task.Key, w.ID.String())
 	if err != nil {
-		return fmt.Errorf("Error setting learnuplet status to pending on the orchestrator: %s", err)
+		return fmt.Errorf("Error setting uplet worker: %s", err)
 	}
 
 	err = w.LearnWorkflow(task)
 	if err != nil {
 		// TODO: handle fatal and non-fatal errors differently and set learnuplet status to failed only
 		// if the error was fatal
-		err2 := w.orchestrator.UpdateUpletStatus(common.TypeLearnUplet, common.TaskStatusFailed, task.ID, task.WorkerID)
+		var m map[string]float64
+		var f float64
+		_, _, err2 := w.peer.ReportLearn(task.Key, common.TaskStatusFailed, f, m, m)
 		if err2 != nil {
-			return fmt.Errorf("Error in LearnWorkflow: %s. Error setting learnuplet status to failed on the orchestrator: %s", err, err2)
+			return fmt.Errorf("Error in LearnWorkflow: %s. Error setting learnuplet status to failed on the peer: %s", err, err2)
 		}
 		return fmt.Errorf("Error in LearnWorkflow: %s", err)
 	}
 	return nil
 }
 
-// HandlePred manages a prediction task (orchestrator status updates, etc...)
+// HandlePred manages a prediction task (peer status updates, etc...)
 func (w *Worker) HandlePred(message []byte) (err error) {
-	log.Println("[DEBUG][pred] Starting predicting task")
+	// log.Println("[DEBUG][pred] Starting predicting task")
 
-	// Unmarshal the learn-uplet
-	var task common.Preduplet
-	err = json.NewDecoder(bytes.NewReader(message)).Decode(&task)
-	if err != nil {
-		return fmt.Errorf("Error un-marshaling preduplet: %s -- Body: %s", err, message)
-	}
+	// // Unmarshal the learn-uplet
+	// var task common.Preduplet
+	// err = json.NewDecoder(bytes.NewReader(message)).Decode(&task)
+	// if err != nil {
+	// 	return fmt.Errorf("Error un-marshaling preduplet: %s -- Body: %s", err, message)
+	// }
 
-	if err = task.Check(); err != nil {
-		return fmt.Errorf("Error in pred task: %s -- Body: %s", err, message)
-	}
+	// if err = task.Check(); err != nil {
+	// 	return fmt.Errorf("Error in pred task: %s -- Body: %s", err, message)
+	// }
 
-	// Update its status to pending on the orchestrator
-	err = w.orchestrator.UpdateUpletStatus(common.TypePredUplet, common.TaskStatusPending, task.ID, task.WorkerID)
-	if err != nil {
-		return fmt.Errorf("Error setting preduplet status to pending on the orchestrator: %s", err)
-	}
+	// // Update its status to pending on the peer
+	// err = w.peer.UpdateUpletStatus(common.TypePredUplet, common.TaskStatusPending, task.Key, task.Worker)
+	// if err != nil {
+	// 	return fmt.Errorf("Error setting preduplet status to pending on the peer: %s", err)
+	// }
 
-	err = w.PredWorkflow(task)
-	if err != nil {
-		// TODO: handle fatal and non-fatal errors differently and set preduplet status to failed only
-		// if the error was fatal
-		err2 := w.orchestrator.UpdateUpletStatus(common.TypePredUplet, common.TaskStatusFailed, task.ID, task.WorkerID)
-		if err2 != nil {
-			return fmt.Errorf("2 Errors: Error in PredWorkflow: %s. Error setting preduplet status to failed on the orchestrator: %s", err, err2)
-		}
-		return fmt.Errorf("Error in PredWorkflow: %s", err)
-	}
+	// err = w.PredWorkflow(task)
+	// if err != nil {
+	// 	// TODO: handle fatal and non-fatal errors differently and set preduplet status to failed only
+	// 	// if the error was fatal
+	// 	err2 := w.peer.UpdateUpletStatus(common.TypePredUplet, common.TaskStatusFailed, task.Key, task.Worker)
+	// 	if err2 != nil {
+	// 		return fmt.Errorf("2 Errors: Error in PredWorkflow: %s. Error setting preduplet status to failed on the peer: %s", err, err2)
+	// 	}
+	// 	return fmt.Errorf("Error in PredWorkflow: %s", err)
+	// }
 	return nil
 }
 
 // LearnWorkflow implements our learning workflow
-func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
-	log.Println("[DEBUG][learn] Starting learning workflow")
+func (w *Worker) LearnWorkflow(task common.Learnuplet) (err error) {
+	log.Printf("[DEBUG][learn] Starting learning workflow for %s", task.Key)
 
 	// Setup directory structure
 	taskDataFolder := filepath.Join(w.dataFolder, task.Algo.String())
@@ -190,14 +204,14 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	defer os.RemoveAll(taskDataFolder)
 
 	// Load problem workflow
-	problemWorkflow, err := w.storage.GetProblemWorkflowBlob(task.Workflow)
+	problemWorkflow, err := w.storage.GetProblemWorkflowBlob(task.Problem)
 	if err != nil {
-		return fmt.Errorf("Error pulling problem workflow %s from storage: %s", task.Workflow, err)
+		return fmt.Errorf("Error pulling problem workflow %s from storage: %s", task.Problem, err)
 	}
-	problemImageName := fmt.Sprintf("%s-%s", w.problemImagePrefix, task.Workflow)
+	problemImageName := fmt.Sprintf("%s-%s", w.problemImagePrefix, task.Problem)
 	err = w.ImageLoad(problemImageName, problemWorkflow)
 	if err != nil {
-		return fmt.Errorf("Error loading problem workflow image %s in Docker daemon: %s", task.Workflow, err)
+		return fmt.Errorf("Error loading problem workflow image %s in Docker daemon: %s", task.Problem, err)
 	}
 	problemWorkflow.Close()
 	defer w.containerRuntime.ImageUnload(problemImageName)
@@ -219,11 +233,15 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 
 	// Pull model if a model_start parameter was given in the learn-uplet
 	if task.Rank > 0 {
+		// Check that modelStart is set
+		if uuid.Equal(uuid.Nil, task.ModelStart) {
+			return fmt.Errorf("Error in learnuplet: ModelStart is a Nil uuid, although Rank is set to %d", task.Rank)
+		}
+		// Pull model from storage
 		model, err := w.storage.GetModelBlob(task.ModelStart)
 		if err != nil {
 			return fmt.Errorf("Error pulling start model %s from storage: %s", task.ModelStart, err)
 		}
-
 		err = w.UntargzInFolder(modelFolder, model)
 		if err != nil {
 			return fmt.Errorf("Error un-tar-gz-ing model: %s", err)
@@ -269,7 +287,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	// Let's copy test data into untargetedTestFolder and remove targets
 	_, err = w.UntargetTestingVolume(problemImageName, testFolder, untargetedTestFolder)
 	if err != nil {
-		return fmt.Errorf("Error preparing problem %s for model %s: %s", task.Workflow, task.ModelStart, err)
+		return fmt.Errorf("Error preparing problem %s for model %s: %s", task.Problem, task.ModelStart, err)
 	}
 
 	// Let's pass the task to our execution backend, now that everything should be in place
@@ -282,7 +300,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	_, err = w.ComputePerf(problemImageName, trainFolder, testFolder, untargetedTestFolder, perfFolder)
 	if err != nil {
 		// FIXME: do not return here
-		return fmt.Errorf("Error computing perf for problem %s and model (new) %s: %s", task.Workflow, task.ModelEnd, err)
+		return fmt.Errorf("Error computing perf for problem %s and model (new) %s: %s", task.Problem, task.ModelEnd, err)
 	}
 
 	// Let's create a new model and post it to storage
@@ -319,21 +337,19 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	}
 	modelArchiveReader.Close()
 
-	// Let's send the perf file to the orchestrator
+	// Let's send the perf file to the peer
 	performanceFilePath := fmt.Sprintf("%s/performance.json", perfFolder)
 	resultFile, err := os.Open(performanceFilePath)
 	if err != nil {
 		return fmt.Errorf("Error reading performance file %s: %s", performanceFilePath, err)
 	}
-	perfuplet := client.Perfuplet{}
+	perfuplet := Perfuplet{}
 	err = json.NewDecoder(resultFile).Decode(&perfuplet)
 	if err != nil {
 		return fmt.Errorf("Error un-marshaling performance file to JSON: %s", err)
 	}
-	perfuplet.Status = common.TaskStatusDone
-
-	if err := w.orchestrator.PostLearnResult(task.ID, perfuplet); err != nil {
-		return fmt.Errorf("Error posting learn result %s to orchestrator: %s", task.ModelEnd, err)
+	if _, _, err := w.peer.ReportLearn(task.Key, common.TaskStatusDone, perfuplet.Perf, perfuplet.TrainPerf, perfuplet.TestPerf); err != nil {
+		return fmt.Errorf("Error posting learn result %s to peer: %s", task.ModelEnd, err)
 	}
 
 	resultFile.Close()
@@ -344,147 +360,143 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	return
 }
 
-// PredWorkflow handles our prediction tasks
-func (w *Worker) PredWorkflow(task common.Preduplet) (err error) {
-	log.Println("[DEBUG][pred] Starting predicting workflow")
+// // PredWorkflow handles our prediction tasks
+// func (w *Worker) PredWorkflow(task common.Preduplet) (err error) {
+// 	log.Println("[DEBUG][pred] Starting predicting workflow")
 
-	// Setup directory structure
-	taskDataFolder := filepath.Join(w.dataFolder, task.Model.String())
-	testFolder := filepath.Join(taskDataFolder, w.testFolder)
-	modelFolder := filepath.Join(taskDataFolder, w.modelFolder)
-	predFolder := filepath.Join(testFolder, w.predFolder)
+// 	// Setup directory structure
+// 	taskDataFolder := filepath.Join(w.dataFolder, task.Model.String())
+// 	testFolder := filepath.Join(taskDataFolder, w.testFolder)
+// 	modelFolder := filepath.Join(taskDataFolder, w.modelFolder)
+// 	predFolder := filepath.Join(testFolder, w.predFolder)
 
-	err = os.MkdirAll(testFolder, os.ModeDir)
-	if err != nil {
-		return fmt.Errorf("Error creating test folder under %s: %s", testFolder, err)
-	}
-	err = os.MkdirAll(modelFolder, os.ModeDir)
-	if err != nil {
-		return fmt.Errorf("Error creating model folder under %s: %s", modelFolder, err)
-	}
-	err = os.MkdirAll(predFolder, os.ModeDir)
-	if err != nil {
-		return fmt.Errorf("Error creating pred folder under %s: %s", predFolder, err)
-	}
+// 	err = os.MkdirAll(testFolder, os.ModeDir)
+// 	if err != nil {
+// 		return fmt.Errorf("Error creating test folder under %s: %s", testFolder, err)
+// 	}
+// 	err = os.MkdirAll(modelFolder, os.ModeDir)
+// 	if err != nil {
+// 		return fmt.Errorf("Error creating model folder under %s: %s", modelFolder, err)
+// 	}
+// 	err = os.MkdirAll(predFolder, os.ModeDir)
+// 	if err != nil {
+// 		return fmt.Errorf("Error creating pred folder under %s: %s", predFolder, err)
+// 	}
 
-	// Pulling data from storage to testFolder
-	data, err := w.storage.GetDataBlob(task.Data)
-	if err != nil {
-		return fmt.Errorf("Error pulling data %s from storage: %s", task.Data, err)
-	}
-	path := fmt.Sprintf("%s/%s", testFolder, task.Data)
-	dataFile, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("Error creating file %s: %s", path, err)
-	}
-	n, err := io.Copy(dataFile, data)
-	if err != nil {
-		return fmt.Errorf("Error copying data file %s (%d bytes written): %s", path, n, err)
-	}
-	dataFile.Close()
-	data.Close()
+// 	// Pulling data from storage to testFolder
+// 	data, err := w.storage.GetDataBlob(task.Data)
+// 	if err != nil {
+// 		return fmt.Errorf("Error pulling data %s from storage: %s", task.Data, err)
+// 	}
+// 	path := fmt.Sprintf("%s/%s", testFolder, task.Data)
+// 	dataFile, err := os.Create(path)
+// 	if err != nil {
+// 		return fmt.Errorf("Error creating file %s: %s", path, err)
+// 	}
+// 	n, err := io.Copy(dataFile, data)
+// 	if err != nil {
+// 		return fmt.Errorf("Error copying data file %s (%d bytes written): %s", path, n, err)
+// 	}
+// 	dataFile.Close()
+// 	data.Close()
 
-	// Pull model from storage and store it in modelFolder
-	model, err := w.storage.GetModelBlob(task.Model)
-	if err != nil {
-		return fmt.Errorf("Error pulling model %s from storage: %s", task.Model, err)
-	}
+// 	// Pull model from storage and store it in modelFolder
+// 	model, err := w.storage.GetModelBlob(task.Model)
+// 	if err != nil {
+// 		return fmt.Errorf("Error pulling model %s from storage: %s", task.Model, err)
+// 	}
 
-	err = w.UntargzInFolder(modelFolder, model)
-	if err != nil {
-		return fmt.Errorf("Error un-tar-gz-ing model: %s", err)
-	}
-	model.Close()
+// 	err = w.UntargzInFolder(modelFolder, model)
+// 	if err != nil {
+// 		return fmt.Errorf("Error un-tar-gz-ing model: %s", err)
+// 	}
+// 	model.Close()
 
-	// Rename model
-	files, err := ioutil.ReadDir(modelFolder)
-	if err != nil {
-		return fmt.Errorf("Error reading modelFolder: %s", err)
-	}
-	if len(files) != 1 {
-		return fmt.Errorf("Error: several files in modelFolder")
-	}
-	for _, f := range files {
-		oldpath := filepath.Join(modelFolder, f.Name())
-		newpath := filepath.Join(modelFolder, "model_trained.json")
-		if err = os.Rename(oldpath, newpath); err != nil {
-			return fmt.Errorf("Error renaming model: %s", err)
-		}
-	}
+// 	// Rename model
+// 	files, err := ioutil.ReadDir(modelFolder)
+// 	if err != nil {
+// 		return fmt.Errorf("Error reading modelFolder: %s", err)
+// 	}
+// 	if len(files) != 1 {
+// 		return fmt.Errorf("Error: several files in modelFolder")
+// 	}
+// 	for _, f := range files {
+// 		oldpath := filepath.Join(modelFolder, f.Name())
+// 		newpath := filepath.Join(modelFolder, "model_trained.json")
+// 		if err = os.Rename(oldpath, newpath); err != nil {
+// 			return fmt.Errorf("Error renaming model: %s", err)
+// 		}
+// 	}
 
-	// Pull associated algo and load it into a container
-	modelInfo, err := w.storage.GetModel(task.Model)
-	if err != nil {
-		return fmt.Errorf("Error retrieving model %s metadata: %s", task.Model, err)
-	}
-	algo, err := w.storage.GetAlgoBlob(modelInfo.Algo)
-	if err != nil {
-		return fmt.Errorf("Error pulling algo %s from storage: %s", modelInfo.Algo, err)
-	}
-	algoImageName := fmt.Sprintf("%s-%s", w.algoImagePrefix, modelInfo.Algo)
-	err = w.ImageLoad(algoImageName, algo)
-	if err != nil {
-		return fmt.Errorf("Error loading algo image %s in Docker daemon: %s", algoImageName, err)
-	}
-	algo.Close()
-	defer w.containerRuntime.ImageUnload(algoImageName)
+// 	// Pull associated algo and load it into a container
+// 	modelInfo, err := w.storage.GetModel(task.Model)
+// 	if err != nil {
+// 		return fmt.Errorf("Error retrieving model %s metadata: %s", task.Model, err)
+// 	}
+// 	algo, err := w.storage.GetAlgoBlob(modelInfo.Algo)
+// 	if err != nil {
+// 		return fmt.Errorf("Error pulling algo %s from storage: %s", modelInfo.Algo, err)
+// 	}
+// 	algoImageName := fmt.Sprintf("%s-%s", w.algoImagePrefix, modelInfo.Algo)
+// 	err = w.ImageLoad(algoImageName, algo)
+// 	if err != nil {
+// 		return fmt.Errorf("Error loading algo image %s in Docker daemon: %s", algoImageName, err)
+// 	}
+// 	algo.Close()
+// 	defer w.containerRuntime.ImageUnload(algoImageName)
 
-	// Let's pass the prediction task to our execution backend, now that everything should be in place
-	_, err = w.Predict(algoImageName, testFolder, predFolder, modelFolder)
-	if err != nil {
-		return fmt.Errorf("Error in pred task: %s -- Body: %s", err, task)
-	}
+// 	// Let's pass the prediction task to our execution backend, now that everything should be in place
+// 	_, err = w.Predict(algoImageName, testFolder, predFolder, modelFolder)
+// 	if err != nil {
+// 		return fmt.Errorf("Error in pred task: %s -- Body: %s", err, task)
+// 	}
 
-	// Let's send the prediction to Storage and address & status to Orchestrator
-	// Check if prediction file exists
-	path = filepath.Join(predFolder, task.Data.String())
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("Error: missing prediction file for data %s", task.Data.String())
-	}
+// 	// Let's send the prediction to Storage and address & status to Peer
+// 	// Check if prediction file exists
+// 	path = filepath.Join(predFolder, task.Data.String())
+// 	if _, err := os.Stat(path); os.IsNotExist(err) {
+// 		return fmt.Errorf("Error: missing prediction file for data %s", task.Data.String())
+// 	}
 
-	// Open file and retrieve size
-	file, err := os.Open(path)
-	if err != nil {
-		return fmt.Errorf("Error opening prediction file from path %s: %s", path, err)
-	}
-	defer file.Close()
+// 	// Open file and retrieve size
+// 	file, err := os.Open(path)
+// 	if err != nil {
+// 		return fmt.Errorf("Error opening prediction file from path %s: %s", path, err)
+// 	}
+// 	defer file.Close()
 
-	stat, err := file.Stat()
-	if err != nil {
-		return fmt.Errorf("Error retrieving file stat: %s", err)
-	}
-	filesize := stat.Size()
+// 	stat, err := file.Stat()
+// 	if err != nil {
+// 		return fmt.Errorf("Error retrieving file stat: %s", err)
+// 	}
+// 	filesize := stat.Size()
 
-	// // Let's tar-gz the file
-	// var targzFile bytes.Buffer
-	// err = TargzFile(file, &targzFile)
-	// if err != nil {
-	// 	log.Println("Error compressing prediction file from path %s: %s", path, err)
-	// 	continue
-	// }
+// 	// // Let's tar-gz the file
+// 	// var targzFile bytes.Buffer
+// 	// err = TargzFile(file, &targzFile)
+// 	// if err != nil {
+// 	// 	log.Println("Error compressing prediction file from path %s: %s", path, err)
+// 	// 	continue
+// 	// }
 
-	// Send the prediction to storage
-	log.Println("[DEBUG][pred] sending the predictions to Storage...")
-	newPrediction := common.NewPrediction()
-	err = w.storage.PostPrediction(newPrediction, file, filesize)
-	if err != nil {
-		return fmt.Errorf("Error streaming new prediction %s to storage: %s", newPrediction.ID, err)
-	}
+// 	// Send the prediction to storage
+// 	log.Println("[DEBUG][pred] sending the predictions to Storage...")
+// 	newPrediction := common.NewPrediction()
+// 	err = w.storage.PostPrediction(newPrediction, file, filesize)
+// 	if err != nil {
+// 		return fmt.Errorf("Error streaming new prediction %s to storage: %s", newPrediction.ID, err)
+// 	}
 
-	// Send status and prediction address to Orchestrator
-	log.Println("[DEBUG][pred] sending the status and prediction UUID to Orchestrator...")
-	preddone := client.Preddone{
-		Status:              common.TaskStatusDone,
-		PredictionStorageID: newPrediction.ID,
-	}
-	err = w.orchestrator.PostPredResult(task.ID, preddone)
-	if err != nil {
-		return fmt.Errorf("Error setting preduplet status to 'done' on the orchestrator: %s", err)
-	}
+// 	// Send status and prediction address to Peer
+// 	log.Println("[DEBUG][pred] sending the status and prediction UUID to Peer...")
+// 	err = w.peer.PostPredResult(task.Key, common.TaskStatusDone, newPrediction.ID)
+// 	if err != nil {
+// 		return fmt.Errorf("Error setting preduplet status to 'done' on the peer: %s", err)
+// 	}
 
-	log.Printf("[INFO][pred] Prediction finished with success, cleaning up...")
-	return nil
-}
+// 	log.Printf("[INFO][pred] Prediction finished with success, cleaning up...")
+// 	return nil
+// }
 
 // ImageLoad loads the docker image corresponding to a problem workflow/submission container in the
 // container runtime that will then run this problem workflow/submission container

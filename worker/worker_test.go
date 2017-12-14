@@ -22,29 +22,28 @@ var (
 	worker      *Worker
 	fixtures    *common.DataParser
 	tmpPathData string
-	preduplet   = &common.Preduplet{
-		ID:                  uuid.NewV4(),
-		Problem:             uuid.NewV4(),
-		Workflow:            uuid.NewV4(),
-		Model:               uuid.NewV4(),
-		Data:                uuid.NewV4(),
-		WorkerID:            uuid.NewV4(),
-		Status:              "todo",
-		RequestDate:         22,
-		CompletionDate:      22,
-		PredictionStorageID: uuid.NewV4(),
-	}
-	learnuplet = &common.LearnUplet{
-		ID:             uuid.NewV4(),
+	// preduplet   = &common.Preduplet{
+	// 	ID:                  uuid.NewV4(),
+	// 	Problem:             uuid.NewV4(),
+	// 	Workflow:            uuid.NewV4(),
+	// 	Model:               uuid.NewV4(),
+	// 	Data:                uuid.NewV4(),
+	// 	WorkerID:            uuid.NewV4(),
+	// 	Status:              "todo",
+	// 	RequestDate:         22,
+	// 	CompletionDate:      22,
+	// 	PredictionStorageID: uuid.NewV4(),
+	// }
+	learnuplet = &common.Learnuplet{
+		Key:            "learnuplet" + uuid.NewV4().String(),
 		Problem:        uuid.NewV4(),
-		Workflow:       uuid.NewV4(),
 		TrainData:      []uuid.UUID{uuid.NewV4(), uuid.NewV4()},
 		TestData:       []uuid.UUID{uuid.NewV4(), uuid.NewV4()},
 		Algo:           uuid.NewV4(),
 		ModelStart:     uuid.NewV4(),
 		ModelEnd:       uuid.NewV4(),
 		Rank:           0,
-		WorkerID:       uuid.NewV4(),
+		Worker:         uuid.NewV4(),
 		Status:         "todo",
 		RequestDate:    22,
 		CompletionDate: 22,
@@ -70,7 +69,7 @@ func TestMain(m *testing.M) {
 	worker = NewWorker(
 		tmpPathData, "train", "test", "untargeted_test", "pred", "perf", "model",
 		"problem", "algo", containerRuntime,
-		storageMock, client.NewOrchestratorAPIMock(),
+		storageMock, &client.PeerMock{},
 	)
 
 	// Run the tests
@@ -104,33 +103,33 @@ func TestHandleLearn(t *testing.T) {
 	assert.Nil(t, worker.HandleLearn(msg))
 }
 
-func TestHandlePred(t *testing.T) {
-	// t.Parallel()
+// func TestHandlePred(t *testing.T) {
+// 	// t.Parallel()
 
-	// Pre-setup directory structure for Pred to avoid permission issues
-	taskDataFolder := filepath.Join(tmpPathData, preduplet.Model.String())
-	assert.Nil(t, worker.SetupDirectories(taskDataFolder, 0777))
+// 	// Pre-setup directory structure for Pred to avoid permission issues
+// 	taskDataFolder := filepath.Join(tmpPathData, preduplet.Model.String())
+// 	assert.Nil(t, worker.SetupDirectories(taskDataFolder, 0777))
 
-	// Create a tar-gzed model mock in tmp
-	modelID := preduplet.Data.String()
-	tmpPathPerfFile := filepath.Join(taskDataFolder, filepath.Join("test/pred/", modelID))
+// 	// Create a tar-gzed model mock in tmp
+// 	modelID := preduplet.Data.String()
+// 	tmpPathPerfFile := filepath.Join(taskDataFolder, filepath.Join("test/pred/", modelID))
 
-	f, err := os.Create(tmpPathPerfFile)
-	assert.Nil(t, err)
+// 	f, err := os.Create(tmpPathPerfFile)
+// 	assert.Nil(t, err)
 
-	mock, err := TargzedMock()
-	assert.Nil(t, err)
+// 	mock, err := TargzedMock()
+// 	assert.Nil(t, err)
 
-	_, err = io.Copy(f, mock)
-	assert.Nil(t, err)
+// 	_, err = io.Copy(f, mock)
+// 	assert.Nil(t, err)
 
-	f.Close()
+// 	f.Close()
 
-	// Test the whole pipeline works
-	preduplet := preduplet
-	msg, _ := json.Marshal(preduplet)
-	assert.Nil(t, worker.HandlePred(msg))
-}
+// 	// Test the whole pipeline works
+// 	preduplet := preduplet
+// 	msg, _ := json.Marshal(preduplet)
+// 	assert.Nil(t, worker.HandlePred(msg))
+// }
 
 // TargzedMock create a Readcloser which can be ungzip-ed
 func TargzedMock() (io.ReadCloser, error) {

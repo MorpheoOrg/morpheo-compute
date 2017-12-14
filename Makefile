@@ -68,7 +68,7 @@ clean: docker-clean bin-clean vendor-clean
 %/build/target: %/*.go # ../morpheo-go-packages/common/*.go ../morpheo-go-packages/client/*.go
 	@echo "Building $(subst /build/target,,$(@)) binary..........................................................................."
 	@mkdir -p $(@D)
-	@CGO_ENABLED=0 GOOS=linux go build -a --installsuffix cgo --ldflags '-extldflags \"-static\"' -o $@ ./$(dir $<)
+	@CGO_ENABLED=1 GOOS=linux go build -a --installsuffix cgo -o $@ ./$(dir $<)
 	@# TODO: $(eval OUTPUT = $(shell go build -v -o $@ ./$(subst /build/target,,$(@)) 2>&1 | grep -v "github.com/MorpheoOrg/morpheo-compute/"))
 	@# TODO: $(if $(-z $(OUTPUT)); @echo "Great Success",@echo "\n***EXTERNAL PACKAGES***\n"$(OUTPUT))
 
@@ -102,7 +102,6 @@ vendor-replace-local:
 
 # 3. Testing
 tests: vendor-replace-local
-	go test ./api
 	go test ./worker
 
 %-tests: vendor-replace-local

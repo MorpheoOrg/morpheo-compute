@@ -27,8 +27,6 @@ Key features
 * **Cloud Native**: the API is stateless and horizontaly scalable. The chosen
   broker for now is NSQ, which - stateful though it may be - can easily be
   scaled horizontally.
-* **Self contained**: Golang enables us to ship a statically linked binary (in a
-  `FROM scratch` docker image for instance)
 * **Simple & Low Level**: written in Golang, simple, and intented to stay so :)
 
 CLI Arguments
@@ -60,3 +58,4 @@ Usage of ./target/compute-api:
 Maintainers
 -----------
 * Étienne Lafarge <etienne@rythm.co>
+* Max-Pol Le Brun <maxpol _at_ morpheo.co>
