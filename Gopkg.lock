@@ -20,10 +20,9 @@
   version = "v0.4.5"
 
 [[projects]]
-  branch = "max/dep-management"
   name = "github.com/MorpheoOrg/morpheo-go-packages"
   packages = ["client","common"]
-  revision = "f6a2aa5eb8d159080b6514ee3715eaca8661f25b"
+  revision = "206f93"
 
 [[projects]]
   name = "github.com/ajg/form"
@@ -351,6 +350,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e7a313780c0b85e459d3f96817f57a9add07d0b216d2506798a4c2bcefd40760"
+  inputs-digest = "244247db86d7d5819cd62c29850050b75f05786d689f78ebb14b06fc37143e93"
   solver-name = "gps-cdcl"
   solver-version = 1

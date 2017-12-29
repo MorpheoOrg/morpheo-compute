@@ -203,6 +203,7 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 	defer w.containerRuntime.ImageUnload(problemImageName)
 
 	log.Println("[DEBUG][learn] 1st Image loaded")
+
 	// Load algo
 	algo, err := w.storage.GetAlgoBlob(task.Algo)
 	if err != nil {
@@ -230,6 +231,8 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 		}
 		model.Close()
 	}
+
+	log.Println("[DEBUG][learn] Starting to pull train and test data...")
 
 	// Pulling train dataset
 	for _, dataID := range task.TrainData {
@@ -266,10 +269,34 @@ func (w *Worker) LearnWorkflow(task common.LearnUplet) (err error) {
 		data.Close()
 	}
 
+	// [DEBUG] check that trainFolder and testFolder are properly set
+	trainFiles, err := ioutil.ReadDir(trainFolder)
+	if err != nil {
+		return fmt.Errorf("Error reading trainFolder: %s", err)
+	}
+	// log.Printf("[DEBUG] Number of data in trainFolder: %d", len(trainFiles))
+	testFiles, err := ioutil.ReadDir(testFolder)
+	if err != nil {
+		return fmt.Errorf("Error reading testFolder: %s", err)
+	}
+	// log.Printf("[DEBUG] Number of data in testFolder: %d", len(testFiles))
+	if len(trainFiles) == 0 || len(testFiles) == 0 {
+		return fmt.Errorf("Error: missing data in train (%d data) or test (%d data) folder...", len(trainFiles), len(testFiles))
+	}
+
 	// Let's copy test data into untargetedTestFolder and remove targets
 	_, err = w.UntargetTestingVolume(problemImageName, testFolder, untargetedTestFolder)
 	if err != nil {
 		return fmt.Errorf("Error preparing problem %s for model %s: %s", task.Workflow, task.ModelStart, err)
+	}
+
+	// Check that untargetedTestFolder is properly set
+	untargetedTestFiles, err := ioutil.ReadDir(untargetedTestFolder)
+	if err != nil {
+		return fmt.Errorf("Error reading untargetedTestFolder: %s", err)
+	}
+	if len(untargetedTestFiles) != len(testFiles) {
+		return fmt.Errorf("Error: Number of untargetedTest data (=%d) different from test data (=%d)", len(untargetedTestFiles), len(testFiles))
 	}
 
 	// Let's pass the task to our execution backend, now that everything should be in place

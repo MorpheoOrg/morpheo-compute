@@ -1,6 +1,6 @@
 [[constraint]]
   name = "github.com/MorpheoOrg/morpheo-go-packages"
-  branch = "master"
+  revision = "206f93"
 
 [[constraint]]
   name = "gopkg.in/kataras/iris.v6"
